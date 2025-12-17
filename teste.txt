@@ -1,0 +1,183 @@
+Cadastro detalhado de embarcações seguindo todas as normativas da Marinha.
+
+NOTA IMPORTANTE: Este é um cadastro de múltiplas etapas. É necessário definir quais campos são obrigatórios em cada etapa.
+
+DADOS BÁSICOS DE IDENTIFICAÇÃO
+- Nome da embarcação
+- Tipo (ex: A - CASCO METÁLICO, ABERTURAS ESTANQUES NO CONVÉS (ESCOTILHÕES/PORTAS DE VISITA))
+- IMO
+- Indicativo
+- Porto de Inscrição
+- Número de Inscrição
+- Bandeira/Pavilhão
+- Data de Inscrição
+- Livro de Inscrição
+- Folha de Inscrição
+- Ind. Radio Internac.
+- Situação (Ativo, Inativo, em construção, baixado, vendido, sinistrado)
+- Data de Cadastro
+
+DADOS TÉCNICOS E DIMENSÕES
+- Comprimento Total (m)
+- Comprimento de Regra (m)
+- Comprimento entre Perpend. (m)
+- Boca (m)
+- Pontal (m)
+- Calado Leve (m)
+- Calado Carregado (m)
+- Comprimento do Casco
+- Contorno
+
+DADOS DE CONSTRUÇÃO
+- Ano de Construção
+- Material de Construção do Casco
+- Material Super Estrutura
+- Número do Casco
+- Estaleiro/Construtor:
+  * Nome
+  * CPF / CNPJ
+  * Endereço
+  * Cidade / Estado
+  * CEP
+
+ARQUEAÇÃO
+- Arqueação Bruta
+- Arqueação Líquida
+- Porte Bruto (t)
+- Espaços fechados abaixo do convés (m³)
+- Espaços fechados acima do convés (m³)
+- Espaços de carga (m³)
+- Volume total de espaços fechados (m³)
+- Data e local da arqueação original
+- Data e local da última rearqueação
+- CSN
+- Regra de Cálculo para ARQUEAÇÃO: CNARQ
+
+BORDA LIVRE
+- Marca da linha de carga para área 1 (mm)
+- Marca da linha de carga para área 2 (mm)
+- Aresta superior X Face superior do convés ao lado (mm)
+- Centro do disco X Bico de Proa (mm)
+- Acréscimo P/Nav água salgada abaixo do disco de PLIMSOLL (mm)
+- Acréscimo P/Nav em água doce acima da marca da linha de carga (mm)
+- Regra de Cálculo para BORDA LIVRE: Selecione o Tipo de Cálculo para Borda Livre
+
+PROPULSÃO E MOTORES
+- Tipo de Propulsão
+- Sem propulsão (Sim/Não)
+- Tipo de Planta Propulsora
+- Total de Máquinas
+
+Motor 1:
+  * Tipo/Marca
+  * Fabricante/Modelo/Número
+  * Potência
+  * Potência Nominal Elétrica
+  * Tipo de Combustível
+
+Motor 2:
+  * Tipo/Marca
+  * Fabricante/Modelo/Número
+  * Potência
+  * Potência Nominal Elétrica
+  * Tipo de Combustível
+
+Motor 3:
+  * Tipo/Marca
+  * Fabricante/Modelo/Número
+  * Potência
+  * Potência Nominal Elétrica
+  * Tipo de Combustível
+
+Motor 4:
+  * Tipo/Marca
+  * Fabricante/Modelo/Número
+  * Potência
+  * Potência Nominal Elétrica
+  * Tipo de Combustível
+
+CAPACIDADE E TRIPULAÇÃO
+- Tripulantes
+- Passageiros
+- Número total de passageiros em camarotes com até 8 (oito) beliches
+- Capacidade de passageiros por categoria
+
+DISTRIBUIÇÃO DE PASSAGEIROS / CARGA (t)
+- Convés Principal
+- Convés Superior
+- Área de lazer
+- Passageiros sentados
+- Passageiros em camarote
+- Passageiros em redes
+- Passageiros em pé
+- Porão de carga 01 (carga geral)
+- Paiol no casco (mantimentos e materiais diversos)
+- Almoxarifado no convés principal
+- Depósito no convés principal
+- Depósito no convés superior
+
+CAPACIDADES E EQUIPAMENTOS
+- Capacidade Armazenamento
+- Quantidade de beliches
+- Quantidade de banheiros
+- Capacidade de contêineres
+- Capacidade de veículos
+
+CLASSIFICAÇÃO E CARACTERÍSTICAS
+- Tipo de Embarcação
+- Regra de Cálculo para CSN: Selecione o Tipo de Cálculo de CSN
+- Tipo de Atividade / Serviço - Mar Aberto:
+  * APOIO MARÍTIMO (NÃO)
+  * CABOTAGEM (NÃO)
+  * LONGO CURSO (NÃO)
+  * ÁREA RÁDIO - 1 (NÃO)
+  * ÁREAS RÁDIO - 1 E 2 (NÃO)
+  * ÁREAS RÁDIO - 1,2 E 3 (NÃO)
+  * ÁREAS RÁDIO - 1,2,3 E 4 (NÃO)
+
+- Tipo de Atividade / Serviço - Navegação Interior:
+  * ÁREA 1 (NÃO)
+  * ÁREA 2 (NÃO)
+  * APOIO PORTUÁRIO (NÃO)
+  * Dragagem
+
+- Área de Navegação: Selecione
+
+OBJETIVOS E CARACTERÍSTICAS ESPECIAIS
+- Destinaçao Reboque (Não)
+- Autorizado a transportar carga no convés (Não)
+- Mercadorias Perigosas (Não)
+- Cumpre os requisitos de acessibilidade para o transporte coletivo aquaviário de passageiros (Não)
+
+ARMADOR E PARCEIROS
+- Armador:
+  * CPF / CNPJ
+  * Endereço
+  * Cidade / Estado
+  * CEP
+
+- Parceiros Vinculados:
+  * Tipo de Vínculo
+  * Parceiro Vinculado
+  * Lista vazia
+
+DOCUMENTOS DA EMBARCAÇÃO
+- Tipo de Arquivo
+- QR
+- Data de Emissão do Documento
+- Data de Validade
+- Selecionar Arquivo
+- Funcionalidades:
+  * ID, Nome, Tipo, Usuário
+  * Dt. Emissao do Documento
+  * Dt. Validade do Documento
+  * Download
+  * Remover
+
+FUNCIONALIDADES DO SISTEMA
+- Listagem com busca avançada e múltiplos filtros
+- Visualização completa de detalhes
+- Edição de informações com controle de mudanças
+- Status operacional (ativo, inativo, em construção, baixado, vendido, sinistrado)
+- Observações técnicas
+- Histórico de alterações
