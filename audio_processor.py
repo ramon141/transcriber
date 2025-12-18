@@ -6,7 +6,6 @@ Suporta conversão de vídeo para áudio.
 """
 
 import os
-import sys
 import tempfile
 import traceback
 from pathlib import Path
@@ -17,7 +16,6 @@ import numpy as np
 
 # Importa funções do módulo principal
 from split_audio import (
-    verificar_dependencias,
     criar_pasta_saida,
     carregar_modelo_whisper,
 )
