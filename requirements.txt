@@ -1,4 +1,4 @@
-# Dependências principais para o Split Audio
+# Dependências principais para o Transcriber
 librosa>=0.11.0
 soundfile>=0.13.0
 numpy>=2.3.0

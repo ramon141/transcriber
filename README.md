@@ -1,4 +1,4 @@
-# 🎵 Split Audio - Transcritor Automático de Áudio/Vídeo
+# 🎵 Transcriber - Transcritor Automático de Áudio/Vídeo
 
 <div align="center">
 
@@ -15,13 +15,13 @@
 
 ## 📸 Interface
 
-![Split Audio Interface](https://i.imgur.com/o8sKoPO.png)
+![Transcriber Interface](https://i.imgur.com/o8sKoPO.png)
 
 ---
 
 ## 🎯 O que faz?
 
-O **Split Audio** é uma aplicação web que automatiza o processo de transcrição de áudio e vídeo:
+O **Transcriber** é uma aplicação web que automatiza o processo de transcrição de áudio e vídeo:
 
 1. **📹 Aceita Vídeos**: MP4, AVI, MOV, MKV, FLV, WMV, WEBM, M4V, MPG, MPEG
 2. **🎵 Aceita Áudios**: MP3, WAV, M4A, AAC, FLAC, OGG, WMA
@@ -55,8 +55,8 @@ O **Split Audio** é uma aplicação web que automatiza o processo de transcriç
 1. **Clone o repositório**
 
    ```bash
-   git clone https://github.com/seu-usuario/split_audio.git
-   cd split_audio
+   git clone https://github.com/ramon141/transcriber
+   cd transcriber
    ```
 2. **Crie um ambiente virtual**
 
@@ -330,7 +330,7 @@ streamlit run streamlit_app.py --server.port 8502
 ### Componentes
 
 ```
-split_audio/
+transcriber/
 ├── streamlit_app.py          # Interface web (frontend + lógica)
 ├── audio_processor.py         # Processamento de áudio/vídeo
 ├── split_audio.py             # Funções core (dividir, transcrever)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Interface Web Streamlit para Split Audio.
+Interface Web Streamlit para Transcriber.
 Processador e transcritor de áudio com interface intuitiva.
 """
 
@@ -22,7 +22,7 @@ from audio_processor import (
 def configurar_pagina():
     """Configura a página do Streamlit."""
     st.set_page_config(
-        page_title="Split Audio - Processador de Áudio",
+        page_title="Transcriber - Processador de Áudio",
         page_icon="🎵",
         layout="wide",
         initial_sidebar_state="expanded"
@@ -212,7 +212,7 @@ def main():
     inicializar_session_state()
 
     # Título principal
-    st.title("🎵 Split Audio - Processador e Transcritor de Áudio/Vídeo")
+    st.title("🎵 Transcriber - Processador e Transcritor de Áudio/Vídeo")
     st.markdown("""
     Converte vídeos para áudio, divide em segmentos e transcreve automaticamente com IA (Whisper).
 
@@ -393,7 +393,7 @@ def main():
 
     # Rodapé
     st.divider()
-    st.caption("Split Audio v2.0 - Transcritor Automático de Áudio/Vídeo | Desenvolvido com Streamlit")
+    st.caption("Transcriber v2.0 - Transcritor Automático de Áudio/Vídeo | Desenvolvido com Streamlit")
 
 
 if __name__ == "__main__":
