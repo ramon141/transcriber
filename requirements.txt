@@ -3,9 +3,15 @@ librosa>=0.11.0
 soundfile>=0.13.0
 numpy>=2.3.0
 pydub>=0.25.0
-openai-whisper>=20250625
+faster-whisper>=1.1.0
 torch>=2.9.0
 tqdm>=4.67.0
+
+# Diarização (identificação de falantes)
+pyannote.audio>=3.3.0
+
+# Variáveis de ambiente
+python-dotenv>=1.0.0
 
 # Dependências opcionais para melhor compatibilidade
 audioread>=3.0.0

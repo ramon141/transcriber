@@ -2,13 +2,14 @@
 """
 Módulo de processamento de áudio para interface Streamlit.
 Contém wrappers das funções de split_audio.py com suporte a callbacks.
-Suporta conversão de vídeo para áudio.
+Suporta conversão de vídeo para áudio e diarização (identificação de falantes).
 """
 
 import os
 import tempfile
 import traceback
 from pathlib import Path
+from typing import List, Dict, Optional
 import streamlit as st
 import librosa
 import soundfile as sf
@@ -18,6 +19,17 @@ import numpy as np
 from split_audio import (
     criar_pasta_saida,
     carregar_modelo_whisper,
+)
+
+# Importa funções de diarização
+from diarization import (
+    verificar_token_configurado,
+    carregar_pipeline_diarizacao,
+    diarizar_audio,
+    mapear_falantes_para_nomes,
+    combinar_diarizacao_transcricao,
+    formatar_transcricao_com_falantes,
+    criar_resumo_falantes,
 )
 
 
@@ -98,16 +110,30 @@ def carregar_modelo_whisper_streamlit(modelo_nome: str):
     return carregar_modelo_whisper(modelo_nome)
 
 
+@st.cache_resource
+def carregar_pipeline_diarizacao_streamlit():
+    """
+    Carrega o pipeline de diarização Pyannote com cache.
+
+    Returns:
+        Pipeline de diarização carregado
+    """
+    return carregar_pipeline_diarizacao()
+
+
 def transcrever_completa_streamlit(
     arquivo_entrada: str,
     modelo_whisper,
     pasta_saida: str,
     nome_base: str,
     segmentos: list,
-    callbacks: dict = None
+    callbacks: dict = None,
+    diarizar: bool = True,
+    pipeline_diarizacao = None
 ):
     """
     Transcreve todos os segmentos com callbacks para atualizar UI do Streamlit.
+    Suporta diarização (identificação de falantes) quando ativada.
 
     Args:
         arquivo_entrada: Caminho do arquivo de áudio
@@ -119,6 +145,8 @@ def transcrever_completa_streamlit(
             - 'progress': função(percentual) para atualizar barra de progresso
             - 'status': função(mensagem) para atualizar status
             - 'transcricao_preview': função(texto) para preview da transcrição
+        diarizar: Se deve identificar falantes (padrão: True)
+        pipeline_diarizacao: Pipeline Pyannote carregado (necessário se diarizar=True)
 
     Returns:
         Dict com informações dos resultados
@@ -135,16 +163,21 @@ def transcrever_completa_streamlit(
     caminho_detalhado = os.path.join(pasta_saida, nome_detalhado)
 
     # Inicializa arquivo com cabeçalho
+    modo_texto = "COM IDENTIFICAÇÃO DE FALANTES" if diarizar else "SEM IDENTIFICAÇÃO DE FALANTES"
     with open(caminho_completo, 'w', encoding='utf-8') as f:
-        f.write("TRANSCRIÇÃO COMPLETA DO ÁUDIO (ATUALIZANDO...)\n")
+        f.write(f"TRANSCRIÇÃO COMPLETA DO ÁUDIO ({modo_texto})\n")
         f.write("=" * 50 + "\n\n")
         f.write(f"Arquivo original: {arquivo_entrada}\n")
         f.write(f"Total de segmentos: {len(segmentos)}\n")
+        f.write(f"Diarização: {'Ativada' if diarizar else 'Desativada'}\n")
         f.write(f"Status: Processando segmentos...\n\n")
         f.write("=" * 50 + "\n\n")
 
-    transcrições = []
+    # Variáveis para acumular resultados
+    todos_segmentos_transcricao = []
+    segmentos_diarizacao_global = []
     segmentos_info = []
+    offset_tempo = 0.0  # Acumula o offset de tempo para cada segmento
 
     # Processa cada segmento
     for i, (segmento, duracao) in enumerate(segmentos, 1):
@@ -156,64 +189,123 @@ def transcrever_completa_streamlit(
         caminho_wav = os.path.join(pasta_saida, nome_arquivo)
         sf.write(caminho_wav, segmento, 48000)
 
-        # Transcreve
-        resultado = modelo_whisper.transcribe(caminho_wav, language="pt")
-        texto_transcrito = resultado["text"].strip()
+        # Diarização do segmento (se ativada)
+        if diarizar and pipeline_diarizacao is not None:
+            if status_callback:
+                status_callback(f"Identificando falantes no segmento {i}/{len(segmentos)}...")
 
-        if texto_transcrito:
-            timestamp = f"[{i:02d}] {texto_transcrito}"
-            transcrições.append(timestamp)
+            segmentos_diar = diarizar_audio(caminho_wav, pipeline_diarizacao)
+
+            # Ajusta timestamps com offset
+            for seg_diar in segmentos_diar:
+                seg_diar['inicio'] += offset_tempo
+                seg_diar['fim'] += offset_tempo
+                segmentos_diarizacao_global.append(seg_diar)
+
+        # Transcreve com faster-whisper
+        if status_callback:
+            status_callback(f"Transcrevendo segmento {i}/{len(segmentos)}...")
+
+        segments, info = modelo_whisper.transcribe(caminho_wav, language="pt")
+
+        # Coleta segmentos com timestamps
+        for seg in segments:
+            seg_info = {
+                'inicio': seg.start + offset_tempo,
+                'fim': seg.end + offset_tempo,
+                'texto': seg.text.strip()
+            }
+            if seg_info['texto']:
+                todos_segmentos_transcricao.append(seg_info)
+
+        # Texto do segmento atual para preview
+        texto_segmento = " ".join([s['texto'] for s in todos_segmentos_transcricao if s['inicio'] >= offset_tempo])
+
+        if texto_segmento:
             segmentos_info.append({
                 'numero': i,
                 'duracao': duracao,
-                'texto': texto_transcrito,
-                'timestamp': timestamp
+                'texto': texto_segmento,
+                'timestamp': f"[{i:02d}] {texto_segmento}"
             })
 
             if preview_callback:
-                preview_callback(texto_transcrito[:100])
+                preview_callback(texto_segmento[:100])
 
         # Remove WAV temporário
         if os.path.exists(caminho_wav):
             os.remove(caminho_wav)
 
-        # Atualiza arquivo incrementalmente
-        transcricao_completa = "\n\n".join(transcrições)
-        with open(caminho_completo, 'w', encoding='utf-8') as f:
-            f.write("TRANSCRIÇÃO COMPLETA DO ÁUDIO (ATUALIZANDO...)\n")
-            f.write("=" * 50 + "\n\n")
-            f.write(f"Arquivo original: {arquivo_entrada}\n")
-            f.write(f"Total de segmentos: {len(segmentos)}\n")
-            f.write(f"Segmentos processados: {len(transcrições)}\n")
-            f.write(f"Status: {len(transcrições)}/{len(segmentos)} segmentos transcritos\n\n")
-            f.write("=" * 50 + "\n\n")
-            f.write(transcricao_completa)
+        # Atualiza offset para próximo segmento
+        offset_tempo += duracao
 
         # Atualiza progresso
         if progress_callback:
             progress_callback(i / len(segmentos))
 
-    # Atualização final
-    duracao_total = sum(s['duracao'] for s in segmentos_info)
+    # Mapeia falantes para nomes amigáveis se diarização ativada
+    if diarizar and segmentos_diarizacao_global:
+        segmentos_diarizacao_global, mapeamento_falantes = mapear_falantes_para_nomes(
+            segmentos_diarizacao_global
+        )
+
+        # Combina diarização com transcrição
+        segmentos_combinados = combinar_diarizacao_transcricao(
+            segmentos_diarizacao_global,
+            todos_segmentos_transcricao
+        )
+
+        # Formata transcrição com falantes
+        transcricao_completa = formatar_transcricao_com_falantes(
+            segmentos_combinados,
+            incluir_timestamps=False
+        )
+
+        # Cria resumo de falantes
+        resumo_falantes = criar_resumo_falantes(segmentos_combinados)
+    else:
+        # Sem diarização: usa transcrição simples
+        segmentos_combinados = todos_segmentos_transcricao
+        transcricao_completa = " ".join([s['texto'] for s in todos_segmentos_transcricao])
+        resumo_falantes = {}
+
+    # Atualização final do arquivo completo
+    duracao_total = sum(s['duracao'] for s in segmentos_info) if segmentos_info else offset_tempo
     with open(caminho_completo, 'w', encoding='utf-8') as f:
-        f.write("TRANSCRIÇÃO COMPLETA DO ÁUDIO\n")
+        f.write(f"TRANSCRIÇÃO COMPLETA DO ÁUDIO ({modo_texto})\n")
         f.write("=" * 50 + "\n\n")
         f.write(f"Arquivo original: {arquivo_entrada}\n")
         f.write(f"Total de segmentos: {len(segmentos)}\n")
         f.write(f"Duração total: {duracao_total:.1f} segundos\n")
-        f.write(f"Status: COMPLETO - {len(transcrições)}/{len(segmentos)} segmentos transcritos\n\n")
+        f.write(f"Diarização: {'Ativada' if diarizar else 'Desativada'}\n")
+
+        if diarizar and resumo_falantes:
+            f.write(f"Falantes identificados: {len(resumo_falantes)}\n")
+
+        f.write(f"Status: COMPLETO\n\n")
         f.write("=" * 50 + "\n\n")
         f.write(transcricao_completa)
 
     # Salva arquivo detalhado
     with open(caminho_detalhado, 'w', encoding='utf-8') as f:
-        f.write("TRANSCRIÇÃO DETALHADA DO ÁUDIO\n")
+        f.write(f"TRANSCRIÇÃO DETALHADA DO ÁUDIO ({modo_texto})\n")
         f.write("=" * 60 + "\n\n")
-        for info in segmentos_info:
-            f.write(f"SEGMENTO {info['numero']:02d}\n")
-            f.write("-" * 30 + "\n")
-            f.write(f"Duração: {info['duracao']:.1f} segundos\n")
-            f.write(f"Texto: {info['texto']}\n\n")
+
+        if diarizar and segmentos_combinados:
+            # Com diarização: mostra cada fala com falante
+            for i, seg in enumerate(segmentos_combinados, 1):
+                f.write(f"SEGMENTO {i:02d}\n")
+                f.write("-" * 30 + "\n")
+                f.write(f"Tempo: {seg['inicio']:.1f}s - {seg['fim']:.1f}s\n")
+                f.write(f"Falante: {seg.get('falante', 'DESCONHECIDO')}\n")
+                f.write(f"Texto: {seg['texto']}\n\n")
+        else:
+            # Sem diarização: mostra por segmento de áudio
+            for info in segmentos_info:
+                f.write(f"SEGMENTO {info['numero']:02d}\n")
+                f.write("-" * 30 + "\n")
+                f.write(f"Duração: {info['duracao']:.1f} segundos\n")
+                f.write(f"Texto: {info['texto']}\n\n")
 
     if status_callback:
         status_callback("Transcrição completa finalizada!")
@@ -222,6 +314,9 @@ def transcrever_completa_streamlit(
         'sucesso': True,
         'transcricao_completa': transcricao_completa,
         'segmentos': segmentos_info,
+        'segmentos_com_falantes': segmentos_combinados if diarizar else [],
+        'resumo_falantes': resumo_falantes,
+        'diarizacao_ativada': diarizar,
         'arquivo_completo': caminho_completo,
         'arquivo_detalhado': caminho_detalhado,
         'pasta_saida': pasta_saida
@@ -327,22 +422,29 @@ def processar_audio_streamlit(
     arquivo_temporario: str,
     modelo_whisper,
     duracao_segmentos: int = 4,
-    callbacks: dict = None
+    callbacks: dict = None,
+    diarizar: bool = True,
+    pipeline_diarizacao = None
 ):
     """
     Função principal que coordena todo o processamento.
     Sempre divide o áudio/vídeo e transcreve cada parte.
+    Suporta diarização (identificação de falantes).
 
     Fluxo:
     1. Se for vídeo, converte para áudio
     2. Divide o áudio em segmentos
-    3. Transcreve cada segmento
+    3. Se diarização ativada, identifica falantes
+    4. Transcreve cada segmento
+    5. Combina diarização + transcrição
 
     Args:
         arquivo_temporario: Caminho do arquivo temporário (áudio ou vídeo)
         modelo_whisper: Modelo Whisper carregado
         duracao_segmentos: Duração de cada segmento em minutos
         callbacks: Dict com callbacks para UI
+        diarizar: Se deve identificar falantes (padrão: True)
+        pipeline_diarizacao: Pipeline Pyannote carregado (necessário se diarizar=True)
 
     Returns:
         Dict com resultados do processamento
@@ -375,14 +477,16 @@ def processar_audio_streamlit(
         if not resultado_divisao['sucesso']:
             return resultado_divisao
 
-        # Transcreve com progresso
+        # Transcreve com progresso (e diarização se ativada)
         resultado_transcricao = transcrever_completa_streamlit(
             arquivo_para_processar,
             modelo_whisper,
             resultado_divisao['pasta_saida'],
             resultado_divisao['nome_base'],
             resultado_divisao['segmentos'],
-            callbacks
+            callbacks,
+            diarizar=diarizar,
+            pipeline_diarizacao=pipeline_diarizacao
         )
 
         # Combina resultados
@@ -446,6 +550,24 @@ def obter_info_modelo(modelo_nome: str):
             'qualidade': '⭐⭐⭐⭐⭐⭐',
             'velocidade': '⚡',
             'descricao': 'Melhor qualidade, muito lento',
+            'tempo_estimado': '~5-6 min por min de áudio'
+        },
+        'large-v1': {
+            'qualidade': '⭐⭐⭐⭐⭐⭐',
+            'velocidade': '⚡',
+            'descricao': 'Large versão 1 - Alta precisão',
+            'tempo_estimado': '~5-6 min por min de áudio'
+        },
+        'large-v2': {
+            'qualidade': '⭐⭐⭐⭐⭐⭐',
+            'velocidade': '⚡',
+            'descricao': 'Large versão 2 - Melhor que v1',
+            'tempo_estimado': '~5-6 min por min de áudio'
+        },
+        'large-v3': {
+            'qualidade': '⭐⭐⭐⭐⭐⭐',
+            'velocidade': '⚡',
+            'descricao': 'Large versão 3 - Mais recente e preciso',
             'tempo_estimado': '~5-6 min por min de áudio'
         }
     }

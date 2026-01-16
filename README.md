@@ -1,63 +1,101 @@
-# 🎵 Transcriber - Transcritor Automático de Áudio/Vídeo
+# Transcriber - Transcritor Automatico de Audio/Video
 
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)
-![Whisper](https://img.shields.io/badge/OpenAI-Whisper-green.svg)
+![faster-whisper](https://img.shields.io/badge/faster--whisper-1.1+-green.svg)
+![Pyannote](https://img.shields.io/badge/Pyannote-3.3+-purple.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-**Interface web moderna para converter vídeos em áudio, dividir em segmentos e transcrever automaticamente usando IA**
+**Interface web moderna para converter videos em audio, dividir em segmentos, transcrever automaticamente e identificar falantes usando IA**
 
 </div>
 
 ---
 
-## 📸 Interface
+## Interface
 
 ![Transcriber Interface](https://i.imgur.com/o8sKoPO.png)
 
 ---
 
-## 🎯 O que faz?
+## O que faz?
 
-O **Transcriber** é uma aplicação web que automatiza o processo de transcrição de áudio e vídeo:
+O **Transcriber** e uma aplicacao web que automatiza o processo de transcricao de audio e video com identificacao de falantes:
 
-1. **📹 Aceita Vídeos**: MP4, AVI, MOV, MKV, FLV, WMV, WEBM, M4V, MPG, MPEG
-2. **🎵 Aceita Áudios**: MP3, WAV, M4A, AAC, FLAC, OGG, WMA
-3. **🔄 Converte Automaticamente**: Extrai áudio de vídeos
-4. **✂️ Divide em Segmentos**: Quebra em partes menores (configurável)
-5. **🤖 Transcreve com IA**: Usa Whisper (OpenAI) para gerar texto
-6. **📄 Salva Resultados**: Transcrição completa + detalhada
+1. **Aceita Videos**: MP4, AVI, MOV, MKV, FLV, WMV, WEBM, M4V, MPG, MPEG
+2. **Aceita Audios**: MP3, WAV, M4A, AAC, FLAC, OGG, WMA
+3. **Converte Automaticamente**: Extrai audio de videos
+4. **Divide em Segmentos**: Quebra em partes menores (configuravel)
+5. **Transcreve com IA**: Usa faster-whisper para gerar texto
+6. **Identifica Falantes**: Usa Pyannote para diarizacao (quem fala quando)
+7. **Salva Resultados**: Transcricao completa + detalhada + por falante
 
-### ✨ Características Principais
+### Caracteristicas Principais
 
-- 🖱️ **Interface Drag-and-Drop**: Arraste arquivos para processar
-- 🎥 **Suporte a Vídeos**: Converte automaticamente para áudio
-- 🤖 **5 Modelos Whisper**: De rápido (tiny) a preciso (large)
-- 📊 **Progress Bar em Tempo Real**: Acompanhe o processamento
-- 💾 **Salvamento Incremental**: Não perde progresso se interromper
-- ⬇️ **Download Facilitado**: Baixe transcrições individuais ou ZIP completo
-- 🌐 **100% Python**: Streamlit + MoviePy + Whisper
+- **Interface Drag-and-Drop**: Arraste arquivos para processar
+- **Suporte a Videos**: Converte automaticamente para audio
+- **8 Modelos Whisper**: De rapido (tiny) a preciso (large-v3)
+- **Diarizacao (Identificacao de Falantes)**: Sabe quem disse o que
+- **Progress Bar em Tempo Real**: Acompanhe o processamento
+- **Salvamento Incremental**: Nao perde progresso se interromper
+- **Download Facilitado**: Baixe transcricoes individuais ou ZIP completo
+- **CLI e Web**: Use via linha de comando ou interface Streamlit
+- **100% Python**: Streamlit + MoviePy + faster-whisper + Pyannote
 
 ---
 
-## 🚀 Instalação
+## Novidade: Identificacao de Falantes
 
-### Pré-requisitos
+O Transcriber agora identifica automaticamente diferentes falantes no audio:
+
+```
+[FALANTE 1] Bom dia, vamos comecar a reuniao.
+[FALANTE 2] Claro, o primeiro ponto da pauta e...
+
+[FALANTE 1] Perfeito, sobre isso eu gostaria de comentar que...
+[FALANTE 3] Posso adicionar uma observacao?
+```
+
+### Como Funciona
+
+```
+Audio
+  |
+  v
+[Pyannote] -> Timeline de falantes (quem fala de 0:00-0:15, etc.)
+  |
+  v
+[faster-whisper] -> Transcricao com timestamps precisos
+  |
+  v
+[Combinar] -> Associa cada frase ao falante correto
+  |
+  v
+Saida: "[FALANTE 1] texto... [FALANTE 2] texto..."
+```
+
+---
+
+## Instalacao
+
+### Pre-requisitos
 
 - Python 3.13+
 - pip (gerenciador de pacotes)
-- ffmpeg (para conversão de vídeo)
+- ffmpeg (para conversao de video)
+- Token do HuggingFace (para diarizacao)
 
 ### Passo a Passo
 
-1. **Clone o repositório**
+1. **Clone o repositorio**
 
    ```bash
    git clone https://github.com/ramon141/transcriber
    cd transcriber
    ```
+
 2. **Crie um ambiente virtual**
 
    ```bash
@@ -66,106 +104,190 @@ O **Transcriber** é uma aplicação web que automatiza o processo de transcriç
    # ou
    venv\Scripts\activate     # Windows
    ```
-3. **Instale as dependências**
+
+3. **Instale as dependencias**
 
    ```bash
    pip install -r requirements.txt
    ```
-4. **Inicie a aplicação**
 
+4. **Configure o Token HuggingFace (para diarizacao)**
+
+   A identificacao de falantes usa modelos do HuggingFace que requerem autenticacao:
+
+   a. Crie uma conta em [huggingface.co](https://huggingface.co)
+
+   b. Gere um token em [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+
+   c. Aceite os termos de uso dos modelos:
+      - [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+      - [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
+
+   d. Crie um arquivo `.env` na raiz do projeto:
+
+   ```bash
+   echo "HF_TOKEN=hf_seu_token_aqui" > .env
+   ```
+
+5. **Inicie a aplicacao**
+
+   **Interface Web (Streamlit):**
    ```bash
    source venv/bin/activate && STREAMLIT_BROWSER_GATHER_USAGE_STATS=false streamlit run streamlit_app.py --server.headless=true
    ```
-5. **Acesse no navegador**
+
+   **Linha de Comando (CLI):**
+   ```bash
+   python split_audio.py arquivo.wav --diarizar
+   ```
+
+6. **Acesse no navegador**
 
    - Abre automaticamente em: `http://localhost:8501`
-   - Ou acesse manualmente este endereço
+   - Ou acesse manualmente este endereco
 
 ---
 
-## 📖 Como Usar
+## Como Usar
 
-### 1️⃣ Configure na Barra Lateral
+### Interface Web (Streamlit)
 
-**Modelo de Transcrição:**
+#### 1. Configure na Barra Lateral
 
-- **tiny**: Mais rápido (~1.4 min por min de áudio) - Qualidade básica
-- **base**: Balanceado (~2-3 min por min) - **✅ Recomendado**
-- **small**: Boa qualidade (~3-4 min por min)
-- **medium**: Alta qualidade (~4-5 min por min)
-- **large**: Melhor qualidade (~5-6 min por min) - Muito lento
+**Modelo de Transcricao:**
 
-**Duração dos Segmentos:**
+- **tiny**: Mais rapido - Qualidade basica
+- **base**: Balanceado - **Recomendado**
+- **small**: Boa qualidade
+- **medium**: Alta qualidade
+- **large**: Alta precisao - Mais lento
+- **large-v1**: Large versao 1
+- **large-v2**: Large versao 2 - Melhor que v1
+- **large-v3**: Large versao 3 - **Mais recente e preciso**
 
-- 1 a 10 minutos (padrão: 4 minutos)
-- Segmentos menores = processamento mais rápido
+**Duracao dos Segmentos:**
+
+- 1 a 10 minutos (padrao: 4 minutos)
+- Segmentos menores = processamento mais rapido
 - Segmentos maiores = menos arquivos gerados
 
-### 2️⃣ Carregue o Arquivo
+**Identificar Falantes (Diarizacao):**
 
-- **Arraste** o arquivo para a área de upload
+- Ativado por padrao quando o token HF esta configurado
+- Desative se quiser apenas transcricao simples (mais rapido)
+
+#### 2. Carregue o Arquivo
+
+- **Arraste** o arquivo para a area de upload
 - **Ou clique** para selecionar do computador
 - Limite de 500MB por arquivo
 
-### 3️⃣ Processe
+#### 3. Processe
 
-1. Clique em **"🚀 Processar Áudio"**
+1. Clique em **"Processar Audio"**
 2. Acompanhe o progresso em tempo real
-3. Aguarde a conclusão
+3. Aguarde a conclusao
 
-### 4️⃣ Baixe os Resultados
+#### 4. Visualize os Resultados
 
-**Aba "📄 Transcrição Completa":**
-
+**Aba "Transcricao Completa":**
 - Visualize o texto completo
 - Copie diretamente da interface
 
-**Aba "📁 Segmentos":**
-
-- Veja transcrições por segmento
+**Aba "Segmentos":**
+- Veja transcricoes por segmento
 - Timestamps para cada parte
 
-**Aba "⬇️ Downloads":**
+**Aba "Por Falante":** (quando diarizacao ativada)
+- Transcricao organizada por falante
+- Estatisticas de tempo de fala
+- Cores diferentes para cada falante
 
-- Baixe transcrição completa (.txt)
-- Baixe transcrição detalhada (.txt)
-- Baixe ZIP com tudo (áudios + transcrições)
+**Aba "Downloads":**
+- Baixe transcricao completa (.txt)
+- Baixe transcricao detalhada (.txt)
+- Baixe transcricao com falantes (.txt)
+- Baixe ZIP com tudo (audios + transcricoes)
 
 ---
 
-## 🎬 Fluxo de Processamento
+### Linha de Comando (CLI)
+
+**Transcricao simples:**
+```bash
+python split_audio.py arquivo.wav
+```
+
+**Com diarizacao (identificacao de falantes):**
+```bash
+python split_audio.py arquivo.wav --diarizar
+```
+
+**Especificando modelo:**
+```bash
+python split_audio.py arquivo.wav --diarizar --modelo large
+```
+
+**Todas as opcoes:**
+```bash
+python split_audio.py arquivo.wav \
+    --duracao 5 \           # Duracao dos segmentos em minutos
+    --modelo base \         # Modelo Whisper (tiny/base/small/medium/large/large-v1/large-v2/large-v3)
+    --diarizar              # Ativar identificacao de falantes
+```
+
+---
+
+## Fluxo de Processamento
 
 ```mermaid
 graph LR
     A[Upload Arquivo] --> B{Tipo?}
-    B -->|Vídeo| C[Extrai Áudio]
-    B -->|Áudio| D[Divide em Segmentos]
+    B -->|Video| C[Extrai Audio]
+    B -->|Audio| D{Diarizacao?}
     C --> D
-    D --> E[Transcreve com Whisper]
-    E --> F[Gera Arquivos]
-    F --> G[Download]
+    D -->|Sim| E[Pyannote: Identifica Falantes]
+    D -->|Nao| F[Divide em Segmentos]
+    E --> F
+    F --> G[Transcreve com faster-whisper]
+    G --> H{Diarizacao?}
+    H -->|Sim| I[Combina Falantes + Texto]
+    H -->|Nao| J[Gera Arquivos]
+    I --> J
+    J --> K[Download]
 ```
 
-**Exemplo Prático:**
+**Exemplo Pratico (com diarizacao):**
 
 ```
-Entrada: video_aula.mp4 (1 hora)
-         ↓
-Extração: video_aula.wav
-         ↓
-Divisão: 15 segmentos de 4 minutos
-         ↓
-Transcrição: Whisper processa cada segmento
-         ↓
-Saída:
-  - video_aula_transcricao_completa.txt
-  - video_aula_transcricao_detalhada.txt
-  - 15 arquivos de áudio (M4A)
+Entrada: reuniao.mp4 (1 hora, 3 participantes)
+         |
+         v
+Extracao: reuniao.wav
+         |
+         v
+Diarizacao: Pyannote identifica 3 falantes
+         |
+         v
+Divisao: 15 segmentos de 4 minutos
+         |
+         v
+Transcricao: faster-whisper processa cada segmento
+         |
+         v
+Combinacao: Associa texto aos falantes
+         |
+         v
+Saida:
+  - reuniao_transcricao_completa.txt
+  - reuniao_transcricao_detalhada.txt
+  - reuniao_transcricao_com_falantes.txt
+  - 15 arquivos de audio (M4A)
 ```
 
 ---
 
-## 📊 Estrutura de Saída
+## Estrutura de Saida
 
 ```
 arquivo_original_dividido/
@@ -174,198 +296,240 @@ arquivo_original_dividido/
 ├── arquivo_original_parte_03.m4a
 ├── ...
 ├── arquivo_original_transcricao_completa.txt
-└── arquivo_original_transcricao_detalhada.txt
+├── arquivo_original_transcricao_detalhada.txt
+└── arquivo_original_transcricao_com_falantes.txt  (quando diarizacao ativada)
 ```
 
-**Transcrição Completa:**
+**Transcricao com Falantes:**
 
 ```
-🎵 TRANSCRIÇÃO COMPLETA DO ÁUDIO
+TRANSCRICAO COM IDENTIFICACAO DE FALANTES
 ==================================================
 
-Arquivo original: video_aula.mp4
-Total de segmentos: 15
-Duração total: 3600.0 segundos
-Status: ✅ COMPLETO - 15/15 segmentos transcritos
+Arquivo original: reuniao.mp4
+Falantes identificados: 3
+
+ESTATISTICAS POR FALANTE:
+------------------------------
+  FALANTE 1: 45 falas (12.5 min)
+  FALANTE 2: 32 falas (8.3 min)
+  FALANTE 3: 28 falas (7.2 min)
 
 ==================================================
 
-[01] Bem-vindos à aula de hoje...
-[02] Vamos começar falando sobre...
-[03] O conceito principal é...
-...
+TRANSCRICAO:
+
+[FALANTE 1] Bom dia a todos, vamos comecar a reuniao.
+[FALANTE 2] Bom dia! Estou pronto.
+
+[FALANTE 3] Bom dia, pessoal.
+[FALANTE 1] Otimo, o primeiro ponto da pauta e...
 ```
 
 ---
 
-## ⏱️ Tempos de Processamento
+## Tempos de Processamento
 
-### Por Modelo (1 hora de áudio)
+### Por Modelo (1 hora de audio)
 
-| Modelo           | Tempo Estimado | Qualidade    | Recomendação       |
-| ---------------- | -------------- | ------------ | -------------------- |
-| **tiny**   | ~1-2 horas     | ⭐⭐         | Testes rápidos      |
-| **base**   | ~2-3 horas     | ⭐⭐⭐       | ✅ Uso geral         |
-| **small**  | ~3-4 horas     | ⭐⭐⭐⭐     | Conteúdo importante |
-| **medium** | ~4-5 horas     | ⭐⭐⭐⭐⭐   | Alta qualidade       |
-| **large**  | ~5-6 horas     | ⭐⭐⭐⭐⭐⭐ | Máxima precisão    |
+| Modelo       | Velocidade   | Qualidade | Recomendacao          |
+|--------------|--------------|-----------|------------------------|
+| **tiny**     | Muito rapido | Basica    | Testes rapidos         |
+| **base**     | Rapido       | Boa       | Uso geral              |
+| **small**    | Moderado     | Muito boa | Conteudo importante    |
+| **medium**   | Lento        | Excelente | Alta qualidade         |
+| **large**    | Muito lento  | Maxima    | Alta precisao          |
+| **large-v1** | Muito lento  | Maxima    | Versao 1 do large      |
+| **large-v2** | Muito lento  | Maxima    | Melhor que v1          |
+| **large-v3** | Muito lento  | Maxima    | Mais recente e preciso |
 
 ### Dicas de Performance
 
 **Para Arquivos Pequenos (< 30 min):**
-
 - Modelo: `base` ou `small`
 - Segmentos: 4-5 minutos
 
 **Para Arquivos Grandes (> 1 hora):**
-
 - Modelo: `tiny` (velocidade) ou `base` (qualidade)
 - Segmentos: 2-3 minutos
 - Salvamento incremental evita perda de dados
 
-**Para Vídeos:**
+**Para Videos:**
+- Primeira conversao para audio pode demorar
+- Apos conversao, processamento segue normal
+- Videos HD podem ter audio pesado
 
-- Primeira conversão para áudio pode demorar
-- Após conversão, processamento segue normal
-- Vídeos HD podem ter áudio pesado
+**Diarizacao:**
+- Requer GPU para melhor performance
+- Automaticamente usa CUDA ou Apple MPS se disponivel
+- Em CPU e significativamente mais lento
 
 ---
 
-## 🎯 Casos de Uso
+## Casos de Uso
 
-### 📹 Transcrever Aulas Gravadas
+### Transcrever Aulas Gravadas
 
 ```
 Upload: aula_gravada.mp4
 Modelo: base
-Resultado: Transcrição completa da aula
-Tempo: ~2-3x a duração do vídeo
+Diarizacao: Desativada (apenas um falante)
+Resultado: Transcricao completa da aula
 ```
 
-### 🎙️ Transcrever Podcasts
+### Transcrever Podcasts com Multiplos Hosts
 
 ```
 Upload: podcast_ep05.mp3
 Modelo: small
-Resultado: Texto do episódio completo
-Tempo: ~3-4x a duração do áudio
+Diarizacao: Ativada
+Resultado: Texto identificando cada participante
 ```
 
-### 📺 Legendar Vídeos
-
-```
-Upload: video_youtube.mp4
-Modelo: base
-Resultado: Texto para criar legendas
-Tempo: ~2-3x a duração do vídeo
-```
-
-### 📝 Documentar Reuniões
+### Documentar Reunioes
 
 ```
 Upload: reuniao_gravada.m4a
 Modelo: base
-Resultado: Ata da reunião em texto
-Tempo: ~2-3x a duração da reunião
+Diarizacao: Ativada
+Resultado: Ata da reuniao com identificacao de quem disse o que
+```
+
+### Transcrever Entrevistas
+
+```
+Upload: entrevista.wav
+Modelo: small
+Diarizacao: Ativada
+Resultado: Transcricao com [ENTREVISTADOR] e [ENTREVISTADO]
 ```
 
 ---
 
-## 🔧 Solução de Problemas
+## Solucao de Problemas
 
-### ❌ Erro: "Module 'streamlit' not found"
+### Erro: "Module 'streamlit' not found"
 
 ```bash
 pip install streamlit>=1.28.0
 ```
 
-### ❌ Erro: "Module 'moviepy' not found"
+### Erro: "Module 'faster_whisper' not found"
 
 ```bash
-pip install moviepy>=1.0.3
+pip install faster-whisper>=1.1.0
 ```
 
-### ❌ Erro na conversão de vídeo
+### Erro: Token HuggingFace nao configurado
 
-- Verifique se o ffmpeg está instalado
+1. Crie arquivo `.env` na raiz do projeto
+2. Adicione: `HF_TOKEN=hf_seu_token_aqui`
+3. Certifique-se de aceitar os termos dos modelos no HuggingFace
+
+### Erro: 403 Access Denied (HuggingFace)
+
+Voce precisa aceitar os termos de uso dos modelos:
+- [pyannote/speaker-diarization-3.1](https://huggingface.co/pyannote/speaker-diarization-3.1)
+- [pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
+
+### Erro na conversao de video
+
+- Verifique se o ffmpeg esta instalado
 - Mac: `brew install ffmpeg`
 - Ubuntu: `sudo apt install ffmpeg`
 - Windows: [Baixe aqui](https://ffmpeg.org/download.html)
 
-### ❌ Porta 8501 já em uso
+### Porta 8501 ja em uso
 
 ```bash
 streamlit run streamlit_app.py --server.port 8502
 ```
 
-### ❌ Arquivo muito grande (>500MB)
+### Arquivo muito grande (>500MB)
 
 - Divida o arquivo antes de processar
-- Use ferramentas de corte de vídeo
-- Ou reduza a qualidade do vídeo
+- Use ferramentas de corte de video
+- Ou reduza a qualidade do video
 
-### ❌ Modelo Whisper não carrega
+### Modelo Whisper nao carrega
 
-- **Primeira vez**: Faz download automático (internet necessária)
-- **Espaço em disco**: Modelos ocupam 100MB a 3GB
+- **Primeira vez**: Faz download automatico (internet necessaria)
+- **Espaco em disco**: Modelos ocupam 100MB a 3GB
 - **Tente modelo menor**: Comece com `tiny` ou `base`
 
-### ❌ Transcrição vazia ou ruim
+### Transcricao vazia ou ruim
 
-- **Áudio instrumental**: Whisper só transcreve fala
-- **Áudio com ruído**: Use modelo `small` ou superior
-- **Idioma errado**: Sistema usa português por padrão
-- **Volume baixo**: Normalize o áudio antes
+- **Audio instrumental**: Whisper so transcreve fala
+- **Audio com ruido**: Use modelo `small` ou superior
+- **Idioma errado**: Sistema usa portugues por padrao
+- **Volume baixo**: Normalize o audio antes
 
-### ❌ Processamento interrompido
+### Processamento interrompido
 
-- **Não se preocupe!** Salvamento incremental preserva progresso
-- Verifique a pasta de saída - transcrições parciais estão salvas
+- **Nao se preocupe!** Salvamento incremental preserva progresso
+- Verifique a pasta de saida - transcricoes parciais estao salvas
 - Abra o arquivo `_transcricao_completa.txt` para ver o que foi processado
+
+### Diarizacao lenta
+
+- GPU recomendada (CUDA ou Apple MPS)
+- Em CPU, a diarizacao e significativamente mais lenta
+- Desative diarizacao se nao precisar identificar falantes
+
+### Falantes identificados incorretamente
+
+- Aumente a qualidade do audio
+- Certifique-se de que os falantes tem vozes distintas
+- Audios com muito ruido de fundo podem confundir o modelo
 
 ---
 
-## 🛠️ Arquitetura Técnica
+## Arquitetura Tecnica
 
 ### Componentes
 
 ```
 transcriber/
-├── streamlit_app.py          # Interface web (frontend + lógica)
-├── audio_processor.py         # Processamento de áudio/vídeo
-├── split_audio.py             # Funções core (dividir, transcrever)
-├── requirements.txt           # Dependências Python
+├── streamlit_app.py          # Interface web (frontend + logica)
+├── audio_processor.py        # Processamento de audio/video
+├── split_audio.py            # Funcoes core (dividir, transcrever, CLI)
+├── diarization.py            # Identificacao de falantes (Pyannote)
+├── requirements.txt          # Dependencias Python
+├── .env                      # Token HuggingFace (nao commitado)
 └── .streamlit/
-    └── config.toml            # Configurações do Streamlit
+    └── config.toml           # Configuracoes do Streamlit
 ```
 
 ### Tecnologias
 
 - **[Streamlit](https://streamlit.io/)**: Framework web Python
-- **[Whisper](https://github.com/openai/whisper)**: IA de transcrição (OpenAI)
-- **[MoviePy](https://zulko.github.io/moviepy/)**: Processamento de vídeo
-- **[librosa](https://librosa.org/)**: Análise de áudio
-- **[pydub](https://github.com/jiaaro/pydub)**: Manipulação de áudio
+- **[faster-whisper](https://github.com/SYSTRAN/faster-whisper)**: Transcricao otimizada (CTranslate2)
+- **[Pyannote.audio](https://github.com/pyannote/pyannote-audio)**: Diarizacao (identificacao de falantes)
+- **[MoviePy](https://zulko.github.io/moviepy/)**: Processamento de video
+- **[librosa](https://librosa.org/)**: Analise de audio
+- **[pydub](https://github.com/jiaaro/pydub)**: Manipulacao de audio
 
 ### Fluxo de Dados
 
-1. **Upload** → Streamlit recebe arquivo
-2. **Detecção** → Identifica se é vídeo ou áudio
-3. **Conversão** (se vídeo) → MoviePy extrai áudio
-4. **Divisão** → librosa divide em segmentos
-5. **Transcrição** → Whisper processa cada segmento
-6. **Salvamento** → Arquivos TXT criados incrementalmente
-7. **Download** → Streamlit oferece arquivos para download
+1. **Upload** -> Streamlit recebe arquivo
+2. **Deteccao** -> Identifica se e video ou audio
+3. **Conversao** (se video) -> MoviePy extrai audio
+4. **Diarizacao** (se ativada) -> Pyannote identifica falantes
+5. **Divisao** -> librosa divide em segmentos
+6. **Transcricao** -> faster-whisper processa cada segmento
+7. **Combinacao** (se diarizacao) -> Associa texto aos falantes
+8. **Salvamento** -> Arquivos TXT criados incrementalmente
+9. **Download** -> Streamlit oferece arquivos para download
 
 ---
 
-## 📄 Licença
+## Licenca
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto esta sob a licenca MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
 ---
 
-## 👨‍💻 Autor
+## Autor
 
 **Ramon**
 
@@ -373,20 +537,21 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ---
 
-## 🙏 Agradecimentos
+## Agradecimentos
 
-- [OpenAI Whisper](https://github.com/openai/whisper) - Modelo de IA de transcrição
+- [faster-whisper](https://github.com/SYSTRAN/faster-whisper) - Implementacao otimizada do Whisper
+- [Pyannote.audio](https://github.com/pyannote/pyannote-audio) - Diarizacao de falantes
 - [Streamlit](https://streamlit.io/) - Framework web Python
-- [MoviePy](https://zulko.github.io/moviepy/) - Processamento de vídeo
-- [librosa](https://librosa.org/) - Análise de áudio
-- [soundfile](https://pysoundfile.readthedocs.io/) - Leitura/escrita de áudio
+- [MoviePy](https://zulko.github.io/moviepy/) - Processamento de video
+- [librosa](https://librosa.org/) - Analise de audio
+- [soundfile](https://pysoundfile.readthedocs.io/) - Leitura/escrita de audio
 
 ---
 
 <div align="center">
 
-**⭐ Se este projeto foi útil, considere dar uma estrela! ⭐**
+**Se este projeto foi util, considere dar uma estrela!**
 
-Feito com ❤️ e Python
+Feito com Python
 
 </div>
