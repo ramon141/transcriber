@@ -135,6 +135,10 @@ frontend/out/
 frontend/.env.local
 frontend/.env*.local
 
+# Tauri
+frontend/src-tauri/target/
+frontend/src-tauri/gen/
+
 # Playwright MCP (screenshots/snapshots gerados por testes)
 .playwright-mcp/
 
