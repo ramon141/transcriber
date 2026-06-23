@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Stepper } from "./Stepper";
 import { WizardNav } from "./WizardNav";
 import { useWizard } from "@/lib/store";
+import { getConfigStatus } from "@/lib/api";
 import { MODELOS, MODELOS_INFO, type ModeloNome } from "@/lib/types";
 
 export function Step2Config() {
@@ -12,6 +13,16 @@ export function Step2Config() {
   const [modelo, setModelo] = useState<ModeloNome>(cfgModeloNome);
   const [duracao, setDuracao] = useState(cfgDuracaoSegmentos);
   const [diarizar, setDiarizar] = useState(cfgDiarizar);
+  const [hfOk, setHfOk] = useState(false);
+
+  useEffect(() => {
+    getConfigStatus()
+      .then((s) => {
+        setHfOk(s.hf_ok);
+        if (!s.hf_ok) setDiarizar(false);
+      })
+      .catch(() => setHfOk(false));
+  }, []);
 
   const info = MODELOS_INFO[modelo];
 
@@ -28,7 +39,7 @@ export function Step2Config() {
 
       <ModelSelector modelo={modelo} setModelo={setModelo} info={info} />
       <SegmentosInput duracao={duracao} setDuracao={setDuracao} />
-      <DiarizacaoToggle diarizar={diarizar} setDiarizar={setDiarizar} />
+      <DiarizacaoToggle diarizar={diarizar} setDiarizar={setDiarizar} hfOk={hfOk} />
 
       <WizardNav onBack={prevStep} onNext={avancar} nextLabel="Avançar →" />
     </div>
@@ -88,28 +99,51 @@ function SegmentosInput({ duracao, setDuracao }: { duracao: number; setDuracao: 
   );
 }
 
-function DiarizacaoToggle({ diarizar, setDiarizar }: { diarizar: boolean; setDiarizar: (v: boolean) => void }) {
+function DiarizacaoToggle({
+  diarizar,
+  setDiarizar,
+  hfOk,
+}: {
+  diarizar: boolean;
+  setDiarizar: (v: boolean) => void;
+  hfOk: boolean;
+}) {
   return (
     <div className="card mb-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-gray-700">Identificação de falantes</p>
-          <p className="text-xs text-gray-400 mt-0.5">Requer HF_TOKEN configurado no .env</p>
+          {hfOk ? (
+            <p className="text-xs text-gray-400 mt-0.5">Separa a transcrição por falante.</p>
+          ) : (
+            <p className="text-xs text-amber-600 mt-0.5">
+              HF_TOKEN não configurado.{" "}
+              <a href="/configuracoes" className="underline hover:text-amber-800">
+                Configurar em Integrações
+              </a>
+            </p>
+          )}
         </div>
         <button
-          onClick={() => setDiarizar(!diarizar)}
+          onClick={() => hfOk && setDiarizar(!diarizar)}
+          disabled={!hfOk}
+          aria-disabled={!hfOk}
           className={`w-11 h-6 rounded-full transition-all relative ${
-            diarizar ? "bg-gradient-primary" : "bg-gray-200"
+            !hfOk
+              ? "bg-gray-100 cursor-not-allowed"
+              : diarizar
+              ? "bg-gradient-primary"
+              : "bg-gray-200"
           }`}
         >
           <span
             className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
-              diarizar ? "left-5" : "left-0.5"
+              diarizar && hfOk ? "left-5" : "left-0.5"
             }`}
           />
         </button>
       </div>
-      {diarizar && (
+      {diarizar && hfOk && (
         <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-3">
           ⚠️ Diarização é mais lenta. GPU recomendada.
         </p>
