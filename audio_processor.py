@@ -129,7 +129,8 @@ def transcrever_completa_streamlit(
     segmentos: list,
     callbacks: dict = None,
     diarizar: bool = True,
-    pipeline_diarizacao = None
+    pipeline_diarizacao = None,
+    segmento_inicio: int = 1
 ):
     """
     Transcreve todos os segmentos com callbacks para atualizar UI do Streamlit.
@@ -147,6 +148,7 @@ def transcrever_completa_streamlit(
             - 'transcricao_preview': função(texto) para preview da transcrição
         diarizar: Se deve identificar falantes (padrão: True)
         pipeline_diarizacao: Pipeline Pyannote carregado (necessário se diarizar=True)
+        segmento_inicio: Número do segmento a partir do qual iniciar a transcrição (1-based)
 
     Returns:
         Dict com informações dos resultados
@@ -155,6 +157,10 @@ def transcrever_completa_streamlit(
     progress_callback = callbacks.get('progress')
     status_callback = callbacks.get('status')
     preview_callback = callbacks.get('transcricao_preview')
+
+    # Garante que segmento_inicio é válido
+    segmento_inicio = max(1, segmento_inicio)
+    segmento_inicio_idx = segmento_inicio - 1
 
     # Cria os arquivos de transcrição
     nome_arquivo_completo = f"{nome_base}_transcricao_completa.txt"
@@ -169,20 +175,38 @@ def transcrever_completa_streamlit(
         f.write("=" * 50 + "\n\n")
         f.write(f"Arquivo original: {arquivo_entrada}\n")
         f.write(f"Total de segmentos: {len(segmentos)}\n")
+        f.write(f"Início da transcrição: segmento {segmento_inicio}\n")
         f.write(f"Diarização: {'Ativada' if diarizar else 'Desativada'}\n")
         f.write(f"Status: Processando segmentos...\n\n")
         f.write("=" * 50 + "\n\n")
+
+    # Inicializa arquivo detalhado com cabeçalho
+    with open(caminho_detalhado, 'w', encoding='utf-8') as f:
+        f.write(f"TRANSCRIÇÃO DETALHADA DO ÁUDIO ({modo_texto})\n")
+        f.write("=" * 60 + "\n\n")
+        f.write(f"Arquivo original: {arquivo_entrada}\n")
+        f.write(f"Total de segmentos: {len(segmentos)}\n")
+        f.write(f"Início da transcrição: segmento {segmento_inicio}\n")
+        f.write(f"Status: Processando segmentos...\n\n")
+        f.write("=" * 60 + "\n\n")
 
     # Variáveis para acumular resultados
     todos_segmentos_transcricao = []
     segmentos_diarizacao_global = []
     segmentos_info = []
-    offset_tempo = 0.0  # Acumula o offset de tempo para cada segmento
+
+    # Calcula offset de tempo acumulado até o segmento de início
+    offset_tempo = sum(duracao for _, duracao in segmentos[:segmento_inicio_idx])
+
+    # Filtra segmentos a partir do início especificado
+    segmentos_para_processar = segmentos[segmento_inicio_idx:]
+    total_para_processar = len(segmentos_para_processar)
 
     # Processa cada segmento
-    for i, (segmento, duracao) in enumerate(segmentos, 1):
+    for idx, (segmento, duracao) in enumerate(segmentos_para_processar):
+        i = segmento_inicio + idx  # número real do segmento (1-based)
         if status_callback:
-            status_callback(f"Processando segmento {i}/{len(segmentos)}...")
+            status_callback(f"Processando segmento {i}/{len(segmentos)} (transcrevendo {idx+1}/{total_para_processar})...")
 
         # Salva segmento como WAV temporário
         nome_arquivo = f"{nome_base}_parte_{i:02d}.wav"
@@ -190,6 +214,7 @@ def transcrever_completa_streamlit(
         sf.write(caminho_wav, segmento, 48000)
 
         # Diarização do segmento (se ativada)
+        segmentos_diar_local = []
         if diarizar and pipeline_diarizacao is not None:
             if status_callback:
                 status_callback(f"Identificando falantes no segmento {i}/{len(segmentos)}...")
@@ -201,6 +226,8 @@ def transcrever_completa_streamlit(
                 seg_diar['inicio'] += offset_tempo
                 seg_diar['fim'] += offset_tempo
                 segmentos_diarizacao_global.append(seg_diar)
+
+            segmentos_diar_local = segmentos_diar
 
         # Transcreve com faster-whisper
         if status_callback:
@@ -232,6 +259,26 @@ def transcrever_completa_streamlit(
             if preview_callback:
                 preview_callback(texto_segmento[:100])
 
+            # Prepara texto formatado com falantes para save incremental
+            if diarizar and segmentos_diar_local:
+                transcricao_local = [s for s in todos_segmentos_transcricao if s['inicio'] >= offset_tempo]
+                segs_mapeados, _ = mapear_falantes_para_nomes(segmentos_diar_local)
+                combinados_local = combinar_diarizacao_transcricao(segs_mapeados, transcricao_local)
+                texto_para_salvar = formatar_transcricao_com_falantes(combinados_local, incluir_timestamps=False)
+            else:
+                texto_para_salvar = texto_segmento
+
+            # Salva incrementalmente nos arquivos após cada segmento transcrito
+            with open(caminho_completo, 'a', encoding='utf-8') as f:
+                f.write(texto_para_salvar + "\n")
+
+            with open(caminho_detalhado, 'a', encoding='utf-8') as f:
+                f.write(f"SEGMENTO {i:02d}\n")
+                f.write("-" * 30 + "\n")
+                f.write(f"Duração: {duracao:.1f} segundos\n")
+                f.write(f"Offset: {offset_tempo:.1f}s\n")
+                f.write(f"Texto:\n{texto_para_salvar}\n\n")
+
         # Remove WAV temporário
         if os.path.exists(caminho_wav):
             os.remove(caminho_wav)
@@ -241,7 +288,7 @@ def transcrever_completa_streamlit(
 
         # Atualiza progresso
         if progress_callback:
-            progress_callback(i / len(segmentos))
+            progress_callback((idx + 1) / total_para_processar)
 
     # Mapeia falantes para nomes amigáveis se diarização ativada
     if diarizar and segmentos_diarizacao_global:
@@ -276,6 +323,7 @@ def transcrever_completa_streamlit(
         f.write("=" * 50 + "\n\n")
         f.write(f"Arquivo original: {arquivo_entrada}\n")
         f.write(f"Total de segmentos: {len(segmentos)}\n")
+        f.write(f"Início da transcrição: segmento {segmento_inicio}\n")
         f.write(f"Duração total: {duracao_total:.1f} segundos\n")
         f.write(f"Diarização: {'Ativada' if diarizar else 'Desativada'}\n")
 
@@ -326,7 +374,9 @@ def transcrever_completa_streamlit(
 def dividir_audio_streamlit(
     arquivo_entrada: str,
     duracao_segmento_min: int = 4,
-    callbacks: dict = None
+    callbacks: dict = None,
+    tempo_inicio: float = 0.0,
+    tempo_fim: Optional[float] = None,
 ):
     """
     Divide um arquivo de áudio em segmentos menores.
@@ -335,6 +385,8 @@ def dividir_audio_streamlit(
         arquivo_entrada: Caminho do arquivo de áudio
         duracao_segmento_min: Duração de cada segmento em minutos
         callbacks: Dict com callbacks opcionais
+        tempo_inicio: Segundo de início do corte (0 = começo do arquivo)
+        tempo_fim: Segundo de fim do corte (None = até o fim do arquivo)
 
     Returns:
         Dict com informações dos segmentos criados
@@ -348,6 +400,12 @@ def dividir_audio_streamlit(
 
     # Carrega áudio
     audio_data, sample_rate = librosa.load(arquivo_entrada, sr=None)
+
+    # Aplica corte por tempo se especificado
+    if tempo_inicio > 0 or tempo_fim is not None:
+        ini_amostras = int(max(0.0, tempo_inicio) * sample_rate)
+        fim_amostras = int(tempo_fim * sample_rate) if tempo_fim is not None else len(audio_data)
+        audio_data = audio_data[ini_amostras:fim_amostras]
 
     # Informações
     duracao_total_segundos = len(audio_data) / sample_rate
@@ -424,16 +482,19 @@ def processar_audio_streamlit(
     duracao_segmentos: int = 4,
     callbacks: dict = None,
     diarizar: bool = True,
-    pipeline_diarizacao = None
+    pipeline_diarizacao = None,
+    segmento_inicio: int = 1,
+    tempo_inicio: float = 0.0,
+    tempo_fim: Optional[float] = None,
 ):
     """
     Função principal que coordena todo o processamento.
     Sempre divide o áudio/vídeo e transcreve cada parte.
-    Suporta diarização (identificação de falantes).
+    Suporta diarização (identificação de falantes) e corte por tempo.
 
     Fluxo:
     1. Se for vídeo, converte para áudio
-    2. Divide o áudio em segmentos
+    2. Divide o áudio em segmentos (aplicando corte por tempo se indicado)
     3. Se diarização ativada, identifica falantes
     4. Transcreve cada segmento
     5. Combina diarização + transcrição
@@ -445,6 +506,9 @@ def processar_audio_streamlit(
         callbacks: Dict com callbacks para UI
         diarizar: Se deve identificar falantes (padrão: True)
         pipeline_diarizacao: Pipeline Pyannote carregado (necessário se diarizar=True)
+        segmento_inicio: Número do segmento a partir do qual iniciar (1-based, mantido p/ CLI)
+        tempo_inicio: Segundo de início do corte (0 = começo)
+        tempo_fim: Segundo de fim do corte (None = fim do arquivo)
 
     Returns:
         Dict com resultados do processamento
@@ -467,11 +531,13 @@ def processar_audio_streamlit(
         else:
             raise ValueError(f"Formato de arquivo não suportado: {Path(arquivo_temporario).suffix}")
 
-        # Divide o áudio em segmentos
+        # Divide o áudio em segmentos (com corte por tempo aplicado dentro)
         resultado_divisao = dividir_audio_streamlit(
             arquivo_para_processar,
             duracao_segmentos,
-            callbacks
+            callbacks,
+            tempo_inicio=tempo_inicio,
+            tempo_fim=tempo_fim,
         )
 
         if not resultado_divisao['sucesso']:
@@ -486,7 +552,8 @@ def processar_audio_streamlit(
             resultado_divisao['segmentos'],
             callbacks,
             diarizar=diarizar,
-            pipeline_diarizacao=pipeline_diarizacao
+            pipeline_diarizacao=pipeline_diarizacao,
+            segmento_inicio=segmento_inicio,
         )
 
         # Combina resultados

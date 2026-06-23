@@ -1,0 +1,68 @@
+- generic [ref=e3]:
+  - banner [ref=e6]:
+    - generic [ref=e9]:
+      - generic [ref=e170]:
+        - img "Running..." [ref=e171]:
+          - img [ref=e172]
+        - button "Stop" [ref=e176] [cursor=pointer]
+      - button "Deploy" [ref=e11] [cursor=pointer]:
+        - generic [ref=e13]: Deploy
+      - button [ref=e15] [cursor=pointer]:
+        - img [ref=e16]
+  - generic [ref=e19]:
+    - generic [ref=e24]:
+      - heading "🎵 Transcriber" [level=1] [ref=e26]: 🎵 Transcriber
+      - paragraph [ref=e28]: Transcrição automática de áudio e vídeo com IA · faster-whisper + Pyannote
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: "1"
+        - generic [ref=e36]: Arquivo
+      - generic [ref=e38]:
+        - generic [ref=e39]: "2"
+        - generic [ref=e40]: Configurações
+      - generic [ref=e42]:
+        - generic [ref=e43]: "3"
+        - generic [ref=e44]: Corte
+      - generic [ref=e46]:
+        - generic [ref=e47]: "4"
+        - generic [ref=e48]: Processar
+      - generic [ref=e50]:
+        - generic [ref=e51]: "5"
+        - generic [ref=e52]: Notion
+    - generic [ref=e56]:
+      - generic [ref=e57]: 📁 Selecione seu arquivo
+      - generic [ref=e58]: "Formatos suportados: MP3, WAV, M4A, AAC, FLAC, OGG · MP4, AVI, MOV, MKV e mais."
+    - generic [ref=e60]:
+      - generic [ref=e61]:
+        - paragraph [ref=e63]: Arraste aqui ou clique para selecionar
+        - img [ref=e67]
+      - region "Arraste aqui ou clique para selecionar" [ref=e70] [cursor=pointer]:
+        - button "Choose File" [ref=e71]
+        - generic [ref=e72]:
+          - img [ref=e74]
+          - generic [ref=e77]:
+            - generic [ref=e78]: Drag and drop file here
+            - generic [ref=e79]: Limit 500MB per file • MP3, WAV, M4A, AAC, FLAC, OGG, WMA, MP4, AVI, MOV, MKV, FLV, WMV, WEBM, M4V, MPG, MPEG, MPEG4
+        - button "Browse files" [ref=e81]
+      - list [ref=e101]:
+        - listitem [ref=e102]:
+          - generic [ref=e103]:
+            - img [ref=e105]
+            - generic [ref=e108]:
+              - generic "audioteste.wav" [ref=e109]
+              - generic [ref=e110]: 1.8MB
+            - button "Remove audioteste.wav" [ref=e112] [cursor=pointer]:
+              - img [ref=e113]
+    - generic [ref=e117]:
+      - generic [ref=e122]:
+        - paragraph [ref=e126]: Arquivo
+        - generic [ref=e128]: audioteste.wav
+      - generic [ref=e133]:
+        - paragraph [ref=e137]: Tamanho
+        - generic [ref=e139]: 1.7 MB
+      - generic [ref=e144]:
+        - paragraph [ref=e148]: Formato
+        - generic [ref=e150]: .WAV
+    - separator [ref=e155]
+    - button "Avançar →" [active] [ref=e162] [cursor=pointer]:
+      - paragraph [ref=e166]: Avançar →

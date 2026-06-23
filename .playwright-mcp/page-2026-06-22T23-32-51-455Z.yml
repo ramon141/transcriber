@@ -1,0 +1,49 @@
+- generic [ref=e3]:
+  - banner [ref=e6]:
+    - generic [ref=e9]:
+      - button "Deploy" [ref=e11] [cursor=pointer]:
+        - generic [ref=e13]: Deploy
+      - button [ref=e15] [cursor=pointer]:
+        - img [ref=e16]
+  - generic [ref=e19]:
+    - generic [ref=e24]:
+      - heading "🎵 Transcriber" [level=1] [ref=e26]: 🎵 Transcriber
+      - paragraph [ref=e28]: Transcrição automática de áudio e vídeo com IA · faster-whisper + Pyannote
+    - generic [ref=e536]:
+      - generic [ref=e537]:
+        - generic [ref=e538]: ✓
+        - generic [ref=e539]: Arquivo
+      - generic [ref=e541]:
+        - generic [ref=e542]: ✓
+        - generic [ref=e543]: Configurações
+      - generic [ref=e545]:
+        - generic [ref=e546]: ✓
+        - generic [ref=e547]: Corte
+      - generic [ref=e549]:
+        - generic [ref=e550]: "4"
+        - generic [ref=e551]: Processar
+      - generic [ref=e553]:
+        - generic [ref=e554]: "5"
+        - generic [ref=e555]: Notion
+    - generic [ref=e559]:
+      - generic [ref=e560]: ▶️ Processamento
+      - generic [ref=e561]: Configurações salvas — inicie a transcrição quando estiver pronto.
+    - generic [ref=e563]:
+      - generic [ref=e568]:
+        - paragraph [ref=e572]: Arquivo
+        - generic [ref=e574]: audioteste.wav
+      - generic [ref=e579]:
+        - paragraph [ref=e583]: Modelo
+        - generic [ref=e585]: base
+      - generic [ref=e590]:
+        - paragraph [ref=e594]: Segmentos
+        - generic [ref=e596]: 4 min
+      - generic [ref=e601]:
+        - paragraph [ref=e605]: Falantes
+        - generic [ref=e607]: Sim
+    - separator [ref=e612]
+    - button "🚀 Iniciar Transcrição" [ref=e619] [cursor=pointer]:
+      - paragraph [ref=e623]: 🚀 Iniciar Transcrição
+    - separator [ref=e630]
+    - button "← Voltar" [ref=e637] [cursor=pointer]:
+      - paragraph [ref=e641]: ← Voltar

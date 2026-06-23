@@ -1,0 +1,72 @@
+- generic [ref=e3]:
+  - banner [ref=e6]:
+    - generic [ref=e9]:
+      - button "Deploy" [ref=e11] [cursor=pointer]:
+        - generic [ref=e13]: Deploy
+      - button [ref=e15] [cursor=pointer]:
+        - img [ref=e16]
+  - generic [ref=e19]:
+    - generic [ref=e24]:
+      - heading "🎵 Transcriber" [level=1] [ref=e26]: 🎵 Transcriber
+      - paragraph [ref=e28]: Transcrição automática de áudio e vídeo com IA · faster-whisper + Pyannote
+    - generic [ref=e387]:
+      - generic [ref=e388]:
+        - generic [ref=e389]: ✓
+        - generic [ref=e390]: Arquivo
+      - generic [ref=e392]:
+        - generic [ref=e393]: ✓
+        - generic [ref=e394]: Configurações
+      - generic [ref=e396]:
+        - generic [ref=e397]: "3"
+        - generic [ref=e398]: Corte
+      - generic [ref=e400]:
+        - generic [ref=e401]: "4"
+        - generic [ref=e402]: Processar
+      - generic [ref=e404]:
+        - generic [ref=e405]: "5"
+        - generic [ref=e406]: Notion
+    - generic [ref=e410]:
+      - generic [ref=e411]: ✂️ Recorte do vídeo
+      - generic [ref=e412]: Defina o trecho que será transcrito. Somente este intervalo será processado.
+    - generic [ref=e414]:
+      - generic [ref=e419]:
+        - paragraph [ref=e423]: Duração total do arquivo
+        - generic [ref=e425]: 00:18
+      - generic [ref=e430]:
+        - paragraph [ref=e434]: Segmentos (arquivo completo)
+        - generic [ref=e436]: "1"
+    - separator [ref=e441]
+    - generic [ref=e444]:
+      - generic [ref=e445]:
+        - paragraph [ref=e447]: Selecione o intervalo (início → fim)
+        - img [ref=e451]
+      - generic [ref=e454]:
+        - generic [ref=e457]:
+          - slider "Selecione o intervalo (início → fim)" [ref=e458]:
+            - generic: 0 s
+          - slider "Selecione o intervalo (início → fim)" [ref=e459]:
+            - generic: 18 s
+        - generic:
+          - generic: 0 s
+          - generic: 18 s
+    - generic [ref=e462]:
+      - generic [ref=e467]:
+        - paragraph [ref=e471]: Início
+        - generic [ref=e473]: 00:00
+      - generic [ref=e478]:
+        - paragraph [ref=e482]: Fim
+        - generic [ref=e484]: 00:18
+      - generic [ref=e489]:
+        - paragraph [ref=e493]: Duração selecionada
+        - generic [ref=e495]: 00:18
+    - alert [ref=e498]:
+      - paragraph [ref=e503]:
+        - text: 📦
+        - strong [ref=e504]: 1 segmento(s)
+        - text: de 4 min serão criados para o trecho selecionado.
+    - separator [ref=e509]
+    - generic [ref=e511]:
+      - button "← Voltar" [ref=e516] [cursor=pointer]:
+        - paragraph [ref=e520]: ← Voltar
+      - button "Avançar →" [ref=e527] [cursor=pointer]:
+        - paragraph [ref=e531]: Avançar →
