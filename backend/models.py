@@ -63,3 +63,4 @@ class EnvioNotion(BaseModel):
     resumo_falantes: dict[str, dict] = {}
     diarizar: bool = False
     resumo: Optional[str] = None
+    atividades: Optional[dict[str, list[str]]] = None

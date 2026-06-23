@@ -59,6 +59,7 @@ async def enviar(payload: EnvioNotion) -> dict[str, str]:
             resumo_falantes=payload.resumo_falantes,
             diarizar=payload.diarizar,
             resumo=payload.resumo,
+            atividades=payload.atividades,
         )
         return {"url": url or ""}
     except Exception as e:

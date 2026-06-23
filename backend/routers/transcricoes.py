@@ -156,6 +156,23 @@ async def resumir_texto(payload: dict) -> dict[str, str]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/atividades")
+async def extrair_atividades_endpoint(payload: dict) -> dict[str, dict[str, list[str]]]:
+    import asyncio
+    from backend.summarizer import extrair_atividades
+
+    texto = str(payload.get("transcricao", "")).strip()
+    if not texto:
+        raise HTTPException(status_code=422, detail="Campo 'transcricao' obrigatório")
+
+    try:
+        loop = asyncio.get_event_loop()
+        atividades = await loop.run_in_executor(None, extrair_atividades, texto)
+        return {"atividades": atividades}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/buscar")
 async def buscar(
     termo: str = "",

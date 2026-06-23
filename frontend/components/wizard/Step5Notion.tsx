@@ -6,7 +6,7 @@ import { BookOpen, Send } from "lucide-react";
 import { Stepper } from "./Stepper";
 import { WizardNav } from "./WizardNav";
 import { useWizard } from "@/lib/store";
-import { criarAssunto, enviarNotion, listarAssuntos, notionStatus, resumirTranscricao } from "@/lib/api";
+import { criarAssunto, enviarNotion, extrairAtividades, listarAssuntos, notionStatus, resumirTranscricao } from "@/lib/api";
 import type { AssuntoNotion } from "@/lib/types";
 
 const CreatableSelect = dynamic(
@@ -29,11 +29,13 @@ export function Step5Notion() {
     () => new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
   );
   const [resumirAtivo, setResumirAtivo] = useState(false);
-  const [statusEnvio, setStatusEnvio] = useState<"idle" | "resumindo" | "enviando">("idle");
+  const [ativarAtividades, setAtivarAtividades] = useState(false);
+  const [statusEnvio, setStatusEnvio] = useState<"idle" | "resumindo" | "extraindo" | "enviando">("idle");
   const [sucesso, setSucesso] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
   const enviando = statusEnvio !== "idle";
+
 
   const carregarAssuntos = useCallback(async () => {
     try {
@@ -82,13 +84,25 @@ export function Step5Notion() {
     setErro(null);
 
     let resumo: string | undefined;
+    let atividades: Record<string, string[]> | undefined;
 
     if (resumirAtivo) {
       setStatusEnvio("resumindo");
       try {
         resumo = await resumirTranscricao(results.transcricao_completa);
       } catch {
-        setErro("Erro ao gerar resumo com IA. Tente sem resumo ou verifique o Claude CLI.");
+        setErro("Erro ao gerar resumo com IA. Verifique o Claude CLI.");
+        setStatusEnvio("idle");
+        return;
+      }
+    }
+
+    if (ativarAtividades) {
+      setStatusEnvio("extraindo");
+      try {
+        atividades = await extrairAtividades(results.transcricao_completa);
+      } catch {
+        setErro("Erro ao extrair atividades com IA. Verifique o Claude CLI.");
         setStatusEnvio("idle");
         return;
       }
@@ -105,6 +119,7 @@ export function Step5Notion() {
         resumo_falantes: results.resumo_falantes,
         diarizar: results.diarizacao_ativada,
         resumo,
+        atividades,
       });
       setSucesso(url);
     } catch {
@@ -112,7 +127,7 @@ export function Step5Notion() {
     } finally {
       setStatusEnvio("idle");
     }
-  }, [results, assuntoSel, titulo, resumirAtivo]);
+  }, [results, assuntoSel, titulo, resumirAtivo, ativarAtividades]);
 
   return (
     <div>
@@ -133,10 +148,12 @@ export function Step5Notion() {
           assuntoSel={assuntoSel}
           titulo={titulo}
           resumirAtivo={resumirAtivo}
+          ativarAtividades={ativarAtividades}
           statusEnvio={statusEnvio}
           onAssuntoChange={handleCriarOuSelecionar}
           onTituloChange={setTitulo}
           onResumirChange={setResumirAtivo}
+          onAtividadesChange={setAtivarAtividades}
           onEnviar={handleEnviar}
         />
       )}
@@ -153,17 +170,19 @@ export function Step5Notion() {
 }
 
 function FormularioEnvio({
-  opcoes, assuntoSel, titulo, resumirAtivo, statusEnvio,
-  onAssuntoChange, onTituloChange, onResumirChange, onEnviar,
+  opcoes, assuntoSel, titulo, resumirAtivo, ativarAtividades, statusEnvio,
+  onAssuntoChange, onTituloChange, onResumirChange, onAtividadesChange, onEnviar,
 }: {
   opcoes: SelectOption[];
   assuntoSel: SelectOption | null;
   titulo: string;
   resumirAtivo: boolean;
-  statusEnvio: "idle" | "resumindo" | "enviando";
+  ativarAtividades: boolean;
+  statusEnvio: "idle" | "resumindo" | "extraindo" | "enviando";
   onAssuntoChange: (v: SelectOption | null) => void;
   onTituloChange: (v: string) => void;
   onResumirChange: (v: boolean) => void;
+  onAtividadesChange: (v: boolean) => void;
   onEnviar: () => void;
 }) {
   return (
@@ -201,26 +220,20 @@ function FormularioEnvio({
         </p>
       </div>
 
-      <div className="card">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <button
-            type="button"
-            onClick={() => onResumirChange(!resumirAtivo)}
-            className={`w-11 h-6 rounded-full transition-all relative shrink-0 ${
-              resumirAtivo ? "bg-gradient-primary" : "bg-gray-200"
-            }`}
-          >
-            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
-              resumirAtivo ? "left-5" : "left-0.5"
-            }`} />
-          </button>
-          <div>
-            <p className="text-sm font-semibold text-gray-700">Resumir transcrição com IA</p>
-            <p className="text-xs text-gray-400">
-              Usa <code>claude-opus-4-8</code> para gerar resumo executivo antes de publicar
-            </p>
-          </div>
-        </label>
+      <div className="card space-y-4">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Opções de IA</p>
+        <ToggleOpcao
+          ativo={resumirAtivo}
+          onChange={onResumirChange}
+          titulo="Resumir transcrição com IA"
+          descricao={<>Gera resumo com pontos, decisões e pendências usando <code>claude-opus-4-8</code></>}
+        />
+        <ToggleOpcao
+          ativo={ativarAtividades}
+          onChange={onAtividadesChange}
+          titulo="Criar aba de Atividades"
+          descricao="Extrai tarefas por participante e cria checklist no Notion"
+        />
       </div>
 
       <button
@@ -229,6 +242,7 @@ function FormularioEnvio({
         className="btn-primary w-full justify-center"
       >
         {statusEnvio === "resumindo" && <>🤖 Gerando resumo com IA...</>}
+        {statusEnvio === "extraindo" && <>📋 Extraindo atividades com IA...</>}
         {statusEnvio === "enviando" && <>⏳ Publicando no Notion...</>}
         {statusEnvio === "idle" && <><Send size={14} /> Publicar no Notion</>}
       </button>
@@ -258,6 +272,29 @@ const selectStyles = {
     boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
   }),
 };
+
+function ToggleOpcao({ ativo, onChange, titulo, descricao }: {
+  ativo: boolean;
+  onChange: (v: boolean) => void;
+  titulo: string;
+  descricao: React.ReactNode;
+}) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer select-none">
+      <button
+        type="button"
+        onClick={() => onChange(!ativo)}
+        className={`w-11 h-6 rounded-full transition-all relative shrink-0 ${ativo ? "bg-gradient-primary" : "bg-gray-200"}`}
+      >
+        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${ativo ? "left-5" : "left-0.5"}`} />
+      </button>
+      <div>
+        <p className="text-sm font-semibold text-gray-700">{titulo}</p>
+        <p className="text-xs text-gray-400">{descricao}</p>
+      </div>
+    </label>
+  );
+}
 
 function NotionNaoConfigurado() {
   return (
