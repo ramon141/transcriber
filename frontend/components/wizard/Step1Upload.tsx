@@ -27,7 +27,7 @@ export function Step1Upload() {
       setLoading(true);
       try {
         const info = await uploadArquivo(file);
-        setFileInfo(info);
+        setFileInfo(info, file);
         nextStep();
       } catch (e) {
         setErro(e instanceof Error ? e.message : "Erro no upload");

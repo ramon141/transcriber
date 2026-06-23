@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { ResultadoTranscricao } from "@/lib/types";
+import { Copy, Check, Download } from "lucide-react";
+import type { ResultadoTranscricao, SegmentoFalante, EstatFalante } from "@/lib/types";
 
 const CORES_FALANTE: Record<string, string> = {
   "FALANTE 1": "#1f77b4", "FALANTE 2": "#ff7f0e", "FALANTE 3": "#2ca02c",
@@ -13,10 +14,71 @@ function corFalante(f: string): string {
   return CORES_FALANTE[f] ?? "#17becf";
 }
 
+function textoCompleta(transcricao: string, segs: SegmentoFalante[], diarizacao: boolean): string {
+  if (diarizacao && segs.length > 0) {
+    return segs.map((s) => `[${s.falante}] ${s.texto}`).join("\n\n");
+  }
+  return transcricao;
+}
+
+function textoFalantes(resumo: Record<string, EstatFalante>): string {
+  return Object.entries(resumo)
+    .map(([f, s]) => `== ${f} (${s.num_falas} falas) ==\n${s.textos.join("\n")}`)
+    .join("\n\n");
+}
+
+function textoSegmentos(segs: ResultadoTranscricao["segmentos"]): string {
+  return segs.map((s) => `#${String(s.numero).padStart(2, "0")} (${s.duracao.toFixed(1)}s)\n${s.texto}`).join("\n\n");
+}
+
+function baixar(conteudo: string, nome: string) {
+  const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nome;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function TabActions({ getText, filename }: { getText: () => string; filename: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(getText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex gap-2 shrink-0">
+      <button onClick={handleCopy} className="btn-secondary text-xs py-1 px-2.5">
+        {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+        {copied ? "Copiado!" : "Copiar"}
+      </button>
+      <button onClick={() => baixar(getText(), filename)} className="btn-secondary text-xs py-1 px-2.5">
+        <Download size={12} /> Baixar
+      </button>
+    </div>
+  );
+}
+
 export function Step4Resultados({ resultado }: { resultado: ResultadoTranscricao }) {
   const [tab, setTab] = useState<"completa" | "falantes" | "segmentos">("completa");
   const { diarizacao_ativada, resumo_falantes, segmentos_com_falantes,
           transcricao_completa, segmentos, from_cache } = resultado;
+
+  const getTabText = (): string => {
+    if (tab === "completa") return textoCompleta(transcricao_completa, segmentos_com_falantes, diarizacao_ativada);
+    if (tab === "falantes") return textoFalantes(resumo_falantes);
+    return textoSegmentos(segmentos);
+  };
+
+  const getTabFilename = (): string => {
+    if (tab === "completa") return "transcricao_completa.txt";
+    if (tab === "falantes") return "transcricao_falantes.txt";
+    return "transcricao_segmentos.txt";
+  };
 
   return (
     <div>
@@ -33,9 +95,12 @@ export function Step4Resultados({ resultado }: { resultado: ResultadoTranscricao
         <Metric label="Tipo" value={diarizacao_ativada ? "Diarizado" : "Simples"} />
       </div>
 
-      <TabBar tab={tab} setTab={setTab} diarizacao={diarizacao_ativada} />
+      <div className="flex items-center justify-between mb-2">
+        <TabBar tab={tab} setTab={setTab} diarizacao={diarizacao_ativada} />
+        <TabActions getText={getTabText} filename={getTabFilename()} />
+      </div>
 
-      <div className="card mt-2">
+      <div className="card">
         {tab === "completa" && (
           <TabCompleta transcricao={transcricao_completa} segs={segmentos_com_falantes} diarizacao={diarizacao_ativada} />
         )}
@@ -71,7 +136,7 @@ function TabBar({ tab, setTab, diarizacao }: {
 }
 
 function TabCompleta({ transcricao, segs, diarizacao }: {
-  transcricao: string; segs: ResultadoTranscricao["segmentos_com_falantes"]; diarizacao: boolean;
+  transcricao: string; segs: SegmentoFalante[]; diarizacao: boolean;
 }) {
   if (diarizacao && segs.length > 0) {
     return (
@@ -96,7 +161,7 @@ function TabCompleta({ transcricao, segs, diarizacao }: {
   );
 }
 
-function TabFalantes({ resumo }: { resumo: ResultadoTranscricao["resumo_falantes"] }) {
+function TabFalantes({ resumo }: { resumo: Record<string, EstatFalante> }) {
   const [open, setOpen] = useState<string | null>(null);
   return (
     <div className="space-y-2">

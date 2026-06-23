@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, RefreshCw } from "lucide-react";
 import { Stepper } from "./Stepper";
 import { WizardNav } from "./WizardNav";
@@ -165,19 +165,59 @@ function CacheCard({ info, onUsar }: { info: string; onUsar: () => void }) {
   );
 }
 
+function useSmoothedProgress(target: number): number {
+  const [displayed, setDisplayed] = useState(0);
+  const ref = useRef(0);
+
+  useEffect(() => {
+    if (target <= ref.current) {
+      ref.current = target;
+      setDisplayed(target);
+      return;
+    }
+    const id = setInterval(() => {
+      const diff = target - ref.current;
+      if (diff < 0.001) {
+        ref.current = target;
+        setDisplayed(target);
+        clearInterval(id);
+        return;
+      }
+      ref.current += diff * 0.08;
+      setDisplayed(ref.current);
+    }, 16);
+    return () => clearInterval(id);
+  }, [target]);
+
+  return displayed;
+}
+
 function ProgressCard({ sse }: { sse: ReturnType<typeof useSSE> }) {
+  const smooth = useSmoothedProgress(sse.progress);
+  const pct = Math.round(smooth * 100);
+
   return (
     <div className="card mb-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Play size={14} className="text-primary animate-pulse" />
-        <p className="text-sm font-semibold text-gray-700">Processando...</p>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Play size={14} className="text-primary animate-pulse" />
+          <p className="text-sm font-semibold text-gray-700">Processando...</p>
+        </div>
+        <span className="text-2xl font-bold text-primary tabular-nums">{pct}%</span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
+
+      <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-1">
         <div
-          className="h-full bg-gradient-primary rounded-full transition-all duration-300"
-          style={{ width: `${Math.round(sse.progress * 100)}%` }}
+          className="h-full bg-gradient-primary rounded-full"
+          style={{ width: `${smooth * 100}%` }}
         />
       </div>
+      <div className="flex justify-between text-[10px] text-gray-400 mb-3">
+        <span>0%</span>
+        <span>50%</span>
+        <span>100%</span>
+      </div>
+
       {sse.status && <p className="text-xs text-gray-500">{sse.status}</p>}
       {sse.preview && <p className="text-xs text-gray-400 mt-1 italic truncate">{sse.preview}</p>}
     </div>
