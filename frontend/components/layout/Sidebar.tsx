@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Mic, List, Search, Music } from "lucide-react";
+import { Mic, List, Search, Music, Settings } from "lucide-react";
 import { clsx } from "clsx";
 
 interface NavItem {
@@ -27,6 +27,12 @@ const NAV: NavSection[] = [
     items: [
       { label: "Listagem", href: "/listagem", icon: List },
       { label: "Busca Avançada", href: "/busca", icon: Search },
+    ],
+  },
+  {
+    title: "Sistema",
+    items: [
+      { label: "Configurações", href: "/configuracoes", icon: Settings },
     ],
   },
 ];

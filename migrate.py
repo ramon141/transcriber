@@ -59,65 +59,70 @@ def _aplicadas(cursor) -> set[str]:
     return {row[0] for row in cursor.fetchall()}
 
 
-def main() -> None:
-    try:
-        import psycopg2
-    except ImportError:
-        print("❌  psycopg2-binary não instalado.")
-        print("    Execute: pip install psycopg2-binary")
-        sys.exit(1)
+def rodar_migrations(url: str) -> int:
+    """
+    Aplica migrations pendentes no banco indicado por `url`.
+
+    Retorna a quantidade aplicada. Levanta exceção em caso de falha
+    (não chama sys.exit), para poder ser usada de dentro da API.
+    """
+    import psycopg2
 
     arquivos = _listar_arquivos()
     if not arquivos:
-        print("Nenhum arquivo .sql em migrations/")
-        return
-
-    url = _obter_url()
-    print("Conectando ao banco de dados...", flush=True)
+        return 0
 
     conn = psycopg2.connect(url)
     conn.autocommit = False
     cur = conn.cursor()
 
-    # Garante tabela de controle
-    cur.execute(_CREATE_CONTROL_TABLE)
-    conn.commit()
+    try:
+        cur.execute(_CREATE_CONTROL_TABLE)
+        conn.commit()
 
-    ja_aplicadas = _aplicadas(cur)
-    pendentes = [f for f in arquivos if f.name not in ja_aplicadas]
+        ja_aplicadas = _aplicadas(cur)
+        pendentes = [f for f in arquivos if f.name not in ja_aplicadas]
 
-    if not pendentes:
-        total = len(arquivos)
-        print(f"✅  Todas as {total} migration(s) já foram aplicadas. Nada a fazer.")
-        cur.close()
-        conn.close()
-        return
-
-    print(f"\nAplicando {len(pendentes)} migration(s) pendente(s):\n")
-
-    for path in pendentes:
-        print(f"  → {path.name} ...", end=" ", flush=True)
-        sql = path.read_text(encoding="utf-8")
-        try:
+        for path in pendentes:
+            sql = path.read_text(encoding="utf-8")
             cur.execute(sql)
             cur.execute(
                 "INSERT INTO schema_migrations (version) VALUES (%s)",
                 (path.name,),
             )
             conn.commit()
-            print("✅")
-        except Exception as err:
-            conn.rollback()
-            print("❌  ERRO")
-            print(f"\nFalha em {path.name}:")
-            print(f"  {err}")
-            cur.close()
-            conn.close()
-            sys.exit(1)
 
-    print(f"\n✅  {len(pendentes)} migration(s) aplicada(s) com sucesso.")
-    cur.close()
-    conn.close()
+        return len(pendentes)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cur.close()
+        conn.close()
+
+
+def main() -> None:
+    try:
+        import psycopg2  # noqa: F401
+    except ImportError:
+        print("❌  psycopg2-binary não instalado.")
+        print("    Execute: pip install psycopg2-binary")
+        sys.exit(1)
+
+    url = _obter_url()
+    print("Conectando ao banco de dados...", flush=True)
+
+    try:
+        aplicadas = rodar_migrations(url)
+    except Exception as err:
+        print("❌  ERRO ao aplicar migrations:")
+        print(f"  {err}")
+        sys.exit(1)
+
+    if aplicadas == 0:
+        print("✅  Nenhuma migration pendente. Nada a fazer.")
+    else:
+        print(f"\n✅  {aplicadas} migration(s) aplicada(s) com sucesso.")
 
 
 if __name__ == "__main__":

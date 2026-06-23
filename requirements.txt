@@ -27,9 +27,6 @@ scipy>=1.16.0
 # Dependências para Python 3.13+ (substitui audioop removido)
 audioop-lts>=0.2.0
 
-# Interface Web
-streamlit>=1.36.0
-
 # Processamento de Vídeo
 moviepy>=1.0.3
 ffmpeg-python>=0.2.0

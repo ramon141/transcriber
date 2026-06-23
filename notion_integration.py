@@ -10,24 +10,47 @@ Estrutura criada:
             └── ✅ Atividades             [toggle — opcional]
 """
 
-import os
+import re
 from typing import Dict, List, Optional
 
-from dotenv import load_dotenv
-
+from config_store import ChaveIntegracao, obter_integracao
 from notion_blocos import construir_blocos
 
-load_dotenv()
-
 MAX_BLOCOS_POR_REQUEST = 100
+TAMANHO_ID_NOTION = 32
+
+
+def extrair_notion_id(valor: str) -> str:
+    """
+    Aceita o ID puro ou um link da página do Notion e devolve o ID
+    de 32 caracteres hexadecimais (sem hifens).
+
+    Ex.: https://.../Reuni-o-...-38858ce2621081aba8cbf52731fc6eb7
+         → 38858ce2621081aba8cbf52731fc6eb7
+    """
+    texto = valor.strip()
+
+    sequencias = re.findall(r"[0-9a-fA-F]{32}", texto)
+    if sequencias:
+        return sequencias[-1].lower()
+
+    somente_hex = re.sub(r"[^0-9a-fA-F]", "", texto)
+    if len(somente_hex) >= TAMANHO_ID_NOTION:
+        return somente_hex[-TAMANHO_ID_NOTION:].lower()
+
+    return texto
 
 
 def obter_token_notion() -> Optional[str]:
-    return os.getenv("NOTION_TOKEN")
+    return obter_integracao(ChaveIntegracao.NOTION_TOKEN)
 
 
 def obter_parent_id() -> Optional[str]:
-    return os.getenv("NOTION_PARENT_ID")
+    valor = obter_integracao(ChaveIntegracao.NOTION_PARENT_ID)
+    if not valor:
+        return valor
+
+    return extrair_notion_id(valor)
 
 
 def verificar_notion_configurado() -> bool:

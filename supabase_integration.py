@@ -28,22 +28,19 @@ Variáveis de ambiente necessárias no .env:
 """
 
 import hashlib
-import os
 from typing import Optional
 
-from dotenv import load_dotenv
-
-load_dotenv()
+from config_store import ChaveConexao, obter_conexao
 
 TABELA = "transcricoes"
 
 
 def obter_url() -> Optional[str]:
-    return os.getenv("SUPABASE_URL")
+    return obter_conexao(ChaveConexao.SUPABASE_URL)
 
 
 def obter_chave() -> Optional[str]:
-    return os.getenv("SUPABASE_KEY")
+    return obter_conexao(ChaveConexao.SUPABASE_KEY)
 
 
 def verificar_supabase_configurado() -> bool:

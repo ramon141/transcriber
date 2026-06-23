@@ -11,11 +11,9 @@ from fastapi.responses import StreamingResponse
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from audio_processor import (  # noqa: E402
-    carregar_modelo_whisper_streamlit,
-    carregar_pipeline_diarizacao_streamlit,
-    detectar_tipo_arquivo,
-)
+from audio_processor import detectar_tipo_arquivo  # noqa: E402
+from split_audio import carregar_modelo_whisper  # noqa: E402
+from diarization import carregar_pipeline_diarizacao  # noqa: E402
 from backend.model_cache import cache
 from backend.models import ConfigTranscricao, UploadResponse
 from backend.processing import stream_transcricao
@@ -205,13 +203,13 @@ def _carregar_modelo(modelo_nome: str) -> None:
         cache.modelo_whisper = None
         cache.ultimo_modelo_nome = modelo_nome
     if cache.modelo_whisper is None:
-        cache.modelo_whisper = carregar_modelo_whisper_streamlit(modelo_nome)
+        cache.modelo_whisper = carregar_modelo_whisper(modelo_nome)
 
 
 def _carregar_pipeline() -> None:
     if not cache.pipeline_carregado:
         try:
-            cache.pipeline_diarizacao = carregar_pipeline_diarizacao_streamlit()
+            cache.pipeline_diarizacao = carregar_pipeline_diarizacao()
             cache.pipeline_carregado = True
         except Exception:
             cache.pipeline_carregado = False

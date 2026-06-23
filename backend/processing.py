@@ -7,7 +7,7 @@ from typing import AsyncGenerator, Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from audio_processor import processar_audio_streamlit  # noqa: E402
+from audio_processor import processar_audio  # noqa: E402
 
 _executor = ThreadPoolExecutor(max_workers=1)
 
@@ -45,7 +45,7 @@ async def stream_transcricao(
 
     future = loop.run_in_executor(
         _executor,
-        lambda: processar_audio_streamlit(
+        lambda: processar_audio(
             arquivo,
             modelo,
             duracao_segmentos,

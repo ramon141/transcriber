@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Módulo de processamento de áudio para interface Streamlit.
+Módulo de processamento de áudio.
 Contém wrappers das funções de split_audio.py com suporte a callbacks.
 Suporta conversão de vídeo para áudio e diarização (identificação de falantes).
 """
@@ -10,7 +10,6 @@ import tempfile
 import traceback
 from pathlib import Path
 from typing import List, Dict, Optional
-import streamlit as st
 import librosa
 import soundfile as sf
 import numpy as np
@@ -96,32 +95,7 @@ def detectar_tipo_arquivo(arquivo: str):
         return 'unknown'
 
 
-@st.cache_resource
-def carregar_modelo_whisper_streamlit(modelo_nome: str):
-    """
-    Carrega o modelo Whisper com cache para evitar recarregamentos.
-
-    Args:
-        modelo_nome: Nome do modelo ('tiny', 'base', 'small', 'medium', 'large')
-
-    Returns:
-        Modelo Whisper carregado
-    """
-    return carregar_modelo_whisper(modelo_nome)
-
-
-@st.cache_resource
-def carregar_pipeline_diarizacao_streamlit():
-    """
-    Carrega o pipeline de diarização Pyannote com cache.
-
-    Returns:
-        Pipeline de diarização carregado
-    """
-    return carregar_pipeline_diarizacao()
-
-
-def transcrever_completa_streamlit(
+def transcrever_completa(
     arquivo_entrada: str,
     modelo_whisper,
     pasta_saida: str,
@@ -133,7 +107,7 @@ def transcrever_completa_streamlit(
     segmento_inicio: int = 1
 ):
     """
-    Transcreve todos os segmentos com callbacks para atualizar UI do Streamlit.
+    Transcreve todos os segmentos com callbacks de progresso.
     Suporta diarização (identificação de falantes) quando ativada.
 
     Args:
@@ -371,7 +345,7 @@ def transcrever_completa_streamlit(
     }
 
 
-def dividir_audio_streamlit(
+def dividir_audio(
     arquivo_entrada: str,
     duracao_segmento_min: int = 4,
     callbacks: dict = None,
@@ -476,7 +450,7 @@ def dividir_audio_streamlit(
     }
 
 
-def processar_audio_streamlit(
+def processar_audio(
     arquivo_temporario: str,
     modelo_whisper,
     duracao_segmentos: int = 4,
@@ -532,7 +506,7 @@ def processar_audio_streamlit(
             raise ValueError(f"Formato de arquivo não suportado: {Path(arquivo_temporario).suffix}")
 
         # Divide o áudio em segmentos (com corte por tempo aplicado dentro)
-        resultado_divisao = dividir_audio_streamlit(
+        resultado_divisao = dividir_audio(
             arquivo_para_processar,
             duracao_segmentos,
             callbacks,
@@ -544,7 +518,7 @@ def processar_audio_streamlit(
             return resultado_divisao
 
         # Transcreve com progresso (e diarização se ativada)
-        resultado_transcricao = transcrever_completa_streamlit(
+        resultado_transcricao = transcrever_completa(
             arquivo_para_processar,
             modelo_whisper,
             resultado_divisao['pasta_saida'],

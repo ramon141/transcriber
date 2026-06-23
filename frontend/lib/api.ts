@@ -1,5 +1,10 @@
 import type {
   AssuntoNotion,
+  ConexaoAtual,
+  ConexaoPayload,
+  ConfigStatus,
+  IntegracoesAtual,
+  IntegracoesPayload,
   ResultadoTranscricao,
   TranscricaoRecord,
   FileInfo,
@@ -137,6 +142,49 @@ export async function enviarNotion(payload: {
 }): Promise<string> {
   const r = await _post<{ url: string }>("/notion/enviar", payload);
   return r.url;
+}
+
+async function _postDetail<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    let mensagem = await res.text();
+    try {
+      const json = JSON.parse(mensagem) as { detail?: string };
+      if (json.detail) mensagem = json.detail;
+    } catch {
+      // mantém texto bruto
+    }
+    throw new Error(mensagem);
+  }
+  return res.json() as Promise<T>;
+}
+
+export async function getConfigStatus(): Promise<ConfigStatus> {
+  return _get<ConfigStatus>("/config/status");
+}
+
+export async function getConexao(): Promise<ConexaoAtual> {
+  return _get<ConexaoAtual>("/config/conexao");
+}
+
+export async function salvarConexao(
+  payload: ConexaoPayload
+): Promise<ConfigStatus> {
+  return _postDetail<ConfigStatus>("/config/conexao", payload);
+}
+
+export async function getIntegracoes(): Promise<IntegracoesAtual> {
+  return _get<IntegracoesAtual>("/config/integracoes");
+}
+
+export async function salvarIntegracoes(
+  payload: IntegracoesPayload
+): Promise<ConfigStatus> {
+  return _postDetail<ConfigStatus>("/config/integracoes", payload);
 }
 
 export function recordToResultado(r: TranscricaoRecord): ResultadoTranscricao {

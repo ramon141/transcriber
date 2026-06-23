@@ -56,6 +56,36 @@ export interface AssuntoNotion {
   nome: string;
 }
 
+export interface ConfigStatus {
+  conexao_ok: boolean;
+  hf_ok: boolean;
+  notion_ok: boolean;
+}
+
+export interface ConexaoAtual {
+  supabase_url: string;
+  supabase_key: string;
+  database_url: string;
+}
+
+export interface ConexaoPayload {
+  supabase_url: string;
+  supabase_key: string;
+  database_url: string;
+}
+
+export interface IntegracoesAtual {
+  hf_token: string;
+  notion_token: string;
+  notion_parent_id: string;
+}
+
+export interface IntegracoesPayload {
+  hf_token?: string;
+  notion_token?: string;
+  notion_parent_id?: string;
+}
+
 export type SSEEvent =
   | { type: "progress"; value: number }
   | { type: "status"; message: string }

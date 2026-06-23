@@ -4,22 +4,19 @@ Módulo de diarização (identificação de falantes) para o Transcriber.
 Usa Pyannote.audio para identificar quem fala quando no áudio.
 """
 
-import os
 from typing import List, Dict, Optional, Tuple
-from dotenv import load_dotenv
 
-# Carrega variáveis de ambiente do arquivo .env
-load_dotenv()
+from config_store import ChaveIntegracao, obter_integracao
 
 
 def obter_token_huggingface() -> Optional[str]:
     """
-    Obtém o token do Hugging Face do arquivo .env.
+    Obtém o token do Hugging Face (banco → .env).
 
     Returns:
         Token HF ou None se não configurado
     """
-    return os.getenv("HF_TOKEN")
+    return obter_integracao(ChaveIntegracao.HF_TOKEN)
 
 
 def verificar_token_configurado() -> bool:

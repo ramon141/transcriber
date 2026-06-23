@@ -64,3 +64,33 @@ class EnvioNotion(BaseModel):
     diarizar: bool = False
     resumo: Optional[str] = None
     atividades: Optional[dict[str, list[str]]] = None
+
+
+class ConfigStatus(BaseModel):
+    conexao_ok: bool = False
+    hf_ok: bool = False
+    notion_ok: bool = False
+
+
+class ConexaoPayload(BaseModel):
+    supabase_url: str
+    supabase_key: str
+    database_url: str
+
+
+class ConexaoAtual(BaseModel):
+    supabase_url: str = ""
+    supabase_key: str = ""
+    database_url: str = ""
+
+
+class IntegracoesPayload(BaseModel):
+    hf_token: Optional[str] = None
+    notion_token: Optional[str] = None
+    notion_parent_id: Optional[str] = None
+
+
+class IntegracoesAtual(BaseModel):
+    hf_token: str = ""
+    notion_token: str = ""
+    notion_parent_id: str = ""
