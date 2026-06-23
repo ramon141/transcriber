@@ -86,6 +86,12 @@ export interface IntegracoesPayload {
   notion_parent_id?: string;
 }
 
+export interface CamposErroIntegracoes {
+  HF_TOKEN?: string;
+  NOTION_TOKEN?: string;
+  NOTION_PARENT_ID?: string;
+}
+
 export type SSEEvent =
   | { type: "progress"; value: number }
   | { type: "status"; message: string }

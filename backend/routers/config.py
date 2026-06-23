@@ -22,8 +22,16 @@ from config_store import (  # noqa: E402
     salvar_integracoes,
     testar_conexao,
 )
-from diarization import verificar_token_configurado  # noqa: E402
-from notion_integration import verificar_notion_configurado  # noqa: E402
+from diarization import (  # noqa: E402
+    validar_token_huggingface,
+    verificar_token_configurado,
+)
+from notion_integration import (  # noqa: E402
+    obter_token_notion,
+    validar_parent_notion,
+    validar_token_notion,
+    verificar_notion_configurado,
+)
 
 router = APIRouter()
 
@@ -75,6 +83,33 @@ async def get_integracoes() -> IntegracoesAtual:
     )
 
 
+def _validar_integracoes(payload: IntegracoesPayload) -> dict[str, str]:
+    erros: dict[str, str] = {}
+
+    if payload.hf_token:
+        erro_hf = validar_token_huggingface(payload.hf_token.strip())
+        if erro_hf:
+            erros[ChaveIntegracao.HF_TOKEN.value] = erro_hf
+
+    if payload.notion_token:
+        erro_token = validar_token_notion(payload.notion_token.strip())
+        if erro_token:
+            erros[ChaveIntegracao.NOTION_TOKEN.value] = erro_token
+
+    if payload.notion_parent_id:
+        token = (payload.notion_token or "").strip() or obter_token_notion()
+        if not token:
+            erros[ChaveIntegracao.NOTION_PARENT_ID.value] = (
+                "Informe o NOTION_TOKEN para validar a página."
+            )
+        elif ChaveIntegracao.NOTION_TOKEN.value not in erros:
+            erro_pai = validar_parent_notion(token, payload.notion_parent_id.strip())
+            if erro_pai:
+                erros[ChaveIntegracao.NOTION_PARENT_ID.value] = erro_pai
+
+    return erros
+
+
 @router.post("/integracoes", response_model=ConfigStatus)
 async def post_integracoes(payload: IntegracoesPayload) -> ConfigStatus:
     if not conexao_configurada():
@@ -83,13 +118,17 @@ async def post_integracoes(payload: IntegracoesPayload) -> ConfigStatus:
             detail="Configure a conexão com o banco antes das integrações.",
         )
 
+    erros = _validar_integracoes(payload)
+    if erros:
+        raise HTTPException(status_code=422, detail={"campo_erros": erros})
+
     valores: dict[ChaveIntegracao, str] = {}
     if payload.hf_token:
-        valores[ChaveIntegracao.HF_TOKEN] = payload.hf_token
+        valores[ChaveIntegracao.HF_TOKEN] = payload.hf_token.strip()
     if payload.notion_token:
-        valores[ChaveIntegracao.NOTION_TOKEN] = payload.notion_token
+        valores[ChaveIntegracao.NOTION_TOKEN] = payload.notion_token.strip()
     if payload.notion_parent_id:
-        valores[ChaveIntegracao.NOTION_PARENT_ID] = payload.notion_parent_id
+        valores[ChaveIntegracao.NOTION_PARENT_ID] = payload.notion_parent_id.strip()
 
     try:
         salvar_integracoes(valores)

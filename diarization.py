@@ -4,9 +4,38 @@ Módulo de diarização (identificação de falantes) para o Transcriber.
 Usa Pyannote.audio para identificar quem fala quando no áudio.
 """
 
+import json
+import urllib.error
+import urllib.request
 from typing import List, Dict, Optional, Tuple
 
 from config_store import ChaveIntegracao, obter_integracao
+
+URL_WHOAMI_HF = "https://huggingface.co/api/whoami-v2"
+
+
+def validar_token_huggingface(token: str) -> Optional[str]:
+    """
+    Valida o token na API do Hugging Face.
+
+    Returns:
+        None se válido, ou mensagem de erro.
+    """
+    req = urllib.request.Request(
+        URL_WHOAMI_HF, headers={"Authorization": f"Bearer {token}"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resposta:
+            dados = json.loads(resposta.read())
+        if dados.get("name") or dados.get("type"):
+            return None
+        return "Token Hugging Face inválido."
+    except urllib.error.HTTPError as err:
+        if err.code in (401, 403):
+            return "Token Hugging Face inválido."
+        return f"Erro ao validar o token HF (HTTP {err.code})."
+    except Exception:
+        return "Não foi possível validar o token HF (verifique a conexão)."
 
 
 def obter_token_huggingface() -> Optional[str]:

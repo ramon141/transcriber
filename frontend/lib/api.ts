@@ -1,5 +1,6 @@
 import type {
   AssuntoNotion,
+  CamposErroIntegracoes,
   ConexaoAtual,
   ConexaoPayload,
   ConfigStatus,
@@ -181,10 +182,44 @@ export async function getIntegracoes(): Promise<IntegracoesAtual> {
   return _get<IntegracoesAtual>("/config/integracoes");
 }
 
+export class IntegracoesInvalidas extends Error {
+  campos: CamposErroIntegracoes;
+
+  constructor(campos: CamposErroIntegracoes) {
+    super("Credenciais de integração inválidas.");
+    this.name = "IntegracoesInvalidas";
+    this.campos = campos;
+  }
+}
+
 export async function salvarIntegracoes(
   payload: IntegracoesPayload
 ): Promise<ConfigStatus> {
-  return _postDetail<ConfigStatus>("/config/integracoes", payload);
+  const res = await fetch(`${BASE}/config/integracoes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (res.ok) {
+    return res.json() as Promise<ConfigStatus>;
+  }
+
+  const texto = await res.text();
+  try {
+    const json = JSON.parse(texto) as {
+      detail?: string | { campo_erros?: CamposErroIntegracoes };
+    };
+    if (typeof json.detail === "object" && json.detail?.campo_erros) {
+      throw new IntegracoesInvalidas(json.detail.campo_erros);
+    }
+    if (typeof json.detail === "string") {
+      throw new Error(json.detail);
+    }
+  } catch (e) {
+    if (e instanceof IntegracoesInvalidas) throw e;
+  }
+  throw new Error(texto);
 }
 
 export function recordToResultado(r: TranscricaoRecord): ResultadoTranscricao {

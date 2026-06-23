@@ -2,12 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff, Loader2, Plug } from "lucide-react";
-import { getIntegracoes, salvarIntegracoes } from "@/lib/api";
+import {
+  getIntegracoes,
+  IntegracoesInvalidas,
+  salvarIntegracoes,
+} from "@/lib/api";
+import type { CamposErroIntegracoes } from "@/lib/types";
 
 interface Props {
   habilitado: boolean;
   onSalvo: () => void;
 }
+
+const SEM_ERROS: CamposErroIntegracoes = {};
 
 export function IntegracoesForm({ habilitado, onSalvo }: Props) {
   const [hfToken, setHfToken] = useState("");
@@ -15,6 +22,7 @@ export function IntegracoesForm({ habilitado, onSalvo }: Props) {
   const [notionParent, setNotionParent] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroCampo, setErroCampo] = useState<CamposErroIntegracoes>(SEM_ERROS);
   const [ok, setOk] = useState(false);
 
   useEffect(() => {
@@ -33,6 +41,7 @@ export function IntegracoesForm({ habilitado, onSalvo }: Props) {
   const salvar = useCallback(async () => {
     setSalvando(true);
     setErro(null);
+    setErroCampo(SEM_ERROS);
     setOk(false);
     try {
       await salvarIntegracoes({
@@ -43,7 +52,11 @@ export function IntegracoesForm({ habilitado, onSalvo }: Props) {
       setOk(true);
       onSalvo();
     } catch (e) {
-      setErro(e instanceof Error ? e.message : "Falha ao salvar integrações.");
+      if (e instanceof IntegracoesInvalidas) {
+        setErroCampo(e.campos);
+      } else {
+        setErro(e instanceof Error ? e.message : "Falha ao salvar integrações.");
+      }
     } finally {
       setSalvando(false);
     }
@@ -66,6 +79,7 @@ export function IntegracoesForm({ habilitado, onSalvo }: Props) {
         onChange={setHfToken}
         placeholder="hf_..."
         secret
+        erro={erroCampo.HF_TOKEN}
       />
       <Campo
         label="NOTION_TOKEN"
@@ -73,12 +87,14 @@ export function IntegracoesForm({ habilitado, onSalvo }: Props) {
         onChange={setNotionToken}
         placeholder="ntn_..."
         secret
+        erro={erroCampo.NOTION_TOKEN}
       />
       <Campo
         label="NOTION_PARENT_ID"
         value={notionParent}
         onChange={setNotionParent}
         placeholder="Cole o link da página do Notion ou o ID"
+        erro={erroCampo.NOTION_PARENT_ID}
       />
 
       {erro && (
@@ -108,9 +124,10 @@ interface CampoProps {
   onChange: (v: string) => void;
   placeholder?: string;
   secret?: boolean;
+  erro?: string;
 }
 
-function Campo({ label, value, onChange, placeholder, secret }: CampoProps) {
+function Campo({ label, value, onChange, placeholder, secret, erro }: CampoProps) {
   const [revelar, setRevelar] = useState(false);
 
   return (
@@ -119,7 +136,7 @@ function Campo({ label, value, onChange, placeholder, secret }: CampoProps) {
       <div className="relative">
         <input
           type={secret && !revelar ? "password" : "text"}
-          className="input pr-12"
+          className={`input pr-12 ${erro ? "border-red-300 focus:border-red-400" : ""}`}
           value={value}
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
@@ -137,6 +154,7 @@ function Campo({ label, value, onChange, placeholder, secret }: CampoProps) {
           </button>
         )}
       </div>
+      {erro && <p className="mt-1 text-xs text-red-600">{erro}</p>}
     </div>
   );
 }

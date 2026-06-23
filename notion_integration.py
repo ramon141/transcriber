@@ -57,6 +57,32 @@ def verificar_notion_configurado() -> bool:
     return bool(obter_token_notion()) and bool(obter_parent_id())
 
 
+def validar_token_notion(token: str) -> Optional[str]:
+    """Valida o token chamando a API do Notion. None = válido."""
+    try:
+        from notion_client import Client
+
+        Client(auth=token).users.me()
+        return None
+    except Exception:
+        return "Token do Notion inválido."
+
+
+def validar_parent_notion(token: str, parent_id: str) -> Optional[str]:
+    """Verifica se a página pai existe e está acessível. None = ok."""
+    try:
+        from notion_client import Client
+
+        pid = extrair_notion_id(parent_id)
+        Client(auth=token).blocks.retrieve(block_id=pid)
+        return None
+    except Exception:
+        return (
+            "Página do Notion não encontrada ou sem acesso. "
+            "Compartilhe a página com a integração."
+        )
+
+
 def _get_client():
     try:
         from notion_client import Client
