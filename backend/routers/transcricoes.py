@@ -139,6 +139,23 @@ async def listar(limite: int = 100) -> list[dict]:
     return listar_transcricoes(limite=limite)
 
 
+@router.post("/resumir")
+async def resumir_texto(payload: dict) -> dict[str, str]:
+    import asyncio
+    from backend.summarizer import resumir_transcricao
+
+    texto = str(payload.get("transcricao", "")).strip()
+    if not texto:
+        raise HTTPException(status_code=422, detail="Campo 'transcricao' obrigatório")
+
+    try:
+        loop = asyncio.get_event_loop()
+        resumo = await loop.run_in_executor(None, resumir_transcricao, texto)
+        return {"resumo": resumo}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/buscar")
 async def buscar(
     termo: str = "",

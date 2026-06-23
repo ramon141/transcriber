@@ -62,3 +62,4 @@ class EnvioNotion(BaseModel):
     segmentos_com_falantes: list[dict] = []
     resumo_falantes: dict[str, dict] = {}
     diarizar: bool = False
+    resumo: Optional[str] = None

@@ -215,6 +215,7 @@ def _construir_blocos(
     segmentos_com_falantes: Optional[List[Dict]] = None,
     resumo_falantes: Optional[Dict] = None,
     diarizar: bool = False,
+    resumo: Optional[str] = None,
 ) -> List[Dict]:
     """
     Constrói a lista de blocos do Notion a partir da transcrição.
@@ -225,6 +226,21 @@ def _construir_blocos(
     # Cabeçalho com data de geração
     data_str = datetime.now().strftime("%d/%m/%Y %H:%M")
     blocos.append(_bloco_paragrafo(f"Transcrição gerada em {data_str}"))
+
+    # Resumo executivo gerado por IA (se disponível)
+    if resumo:
+        blocos.append(_bloco_heading("📋 Resumo Executivo (IA)"))
+        for linha in resumo.split("\n"):
+            linha = linha.strip()
+            if not linha:
+                continue
+            if linha.startswith("## "):
+                blocos.append(_bloco_heading(linha[3:]))
+            elif linha.startswith("- ") or linha.startswith("• "):
+                blocos.append(_bloco_bullet(linha[2:]))
+            else:
+                blocos.append(_bloco_paragrafo(linha))
+        blocos.append(_bloco_heading("📝 Transcrição Completa"))
 
     blocos.append(_bloco_heading("Transcrição"))
 
@@ -262,6 +278,7 @@ def enviar_transcricao_notion(
     segmentos_com_falantes: Optional[List[Dict]] = None,
     resumo_falantes: Optional[Dict] = None,
     diarizar: bool = False,
+    resumo: Optional[str] = None,
 ) -> str:
     """
     Cria uma página de transcrição dentro da sub-página do assunto.
@@ -285,6 +302,7 @@ def enviar_transcricao_notion(
         segmentos_com_falantes,
         resumo_falantes,
         diarizar,
+        resumo,
     )
 
     # Cria a página com os primeiros 100 blocos
