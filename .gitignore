@@ -12,10 +12,17 @@
 *.mp4
 *.mkv
 
-# Pastas de arquivos divididos
+# Pastas de arquivos divididos / temporários de processamento
 *_dividido/
 *_split/
 *_segments/
+tmp*/
+
+# Arquivos de teste local
+audioteste.*
+teste.*
+dirs\ ok
+echo
 
 # Arquivos temporários de áudio
 *.tmp
@@ -120,3 +127,21 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env*.local
+
+# Playwright MCP (screenshots/snapshots gerados por testes)
+.playwright-mcp/
+
+# Uploads temporários do backend
+uploads/
+*.upload
+
+# Pyright / LSP cache
+.pyright/
+pyrightconfig.json
