@@ -8,6 +8,9 @@ const nextConfig = isTauriBuild
       trailingSlash: true,
     }
   : {
+      // Sem compressão: o proxy dev comprimia o event-stream (SSE), bufferizando
+      // os eventos de status até acumular um bloco — status só aparecia em lote.
+      compress: false,
       async rewrites() {
         return [
           {

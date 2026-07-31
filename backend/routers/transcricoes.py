@@ -1,5 +1,8 @@
+import asyncio
 import hashlib
+import json
 import os
+import shutil
 import sys
 import tempfile
 import uuid
@@ -27,20 +30,35 @@ from supabase_integration import (  # noqa: E402
 
 router = APIRouter()
 
-_arquivos_tmp: dict[str, str] = {}
+# Uploads persistidos em disco: nome = file_id + sufixo. Sobrevive a restart
+# do backend (o mapa em memória sumia e quebrava o processar após reload).
+_UPLOAD_DIR = Path(tempfile.gettempdir()) / "transcriber_uploads"
+_UPLOAD_DIR.mkdir(exist_ok=True)
+
+
+def _buscar_upload(file_id: str) -> Optional[str]:
+    encontrados = list(_UPLOAD_DIR.glob(f"{file_id}.*"))
+    return str(encontrados[0]) if encontrados else None
+
+
+def limpar_uploads() -> None:
+    # Remove uploads e pastas _dividido órfãos da sessão anterior (startup).
+    for item in _UPLOAD_DIR.glob("*"):
+        try:
+            shutil.rmtree(item) if item.is_dir() else item.unlink()
+        except OSError:
+            pass
 
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_arquivo(file: UploadFile = File(...)) -> UploadResponse:
     conteudo = await file.read()
 
-    sufixo = Path(file.filename or "audio.mp3").suffix
-    with tempfile.NamedTemporaryFile(delete=False, suffix=sufixo) as tmp:
-        tmp.write(conteudo)
-        tmp_path = tmp.name
-
     file_id = str(uuid.uuid4())
-    _arquivos_tmp[file_id] = tmp_path
+    sufixo = Path(file.filename or "audio.mp3").suffix
+    tmp_path = str(_UPLOAD_DIR / f"{file_id}{sufixo}")
+    with open(tmp_path, "wb") as tmp:
+        tmp.write(conteudo)
 
     hash_arquivo = hashlib.sha256(conteudo).hexdigest()
     tipo = detectar_tipo_arquivo(tmp_path)
@@ -66,13 +84,9 @@ async def processar(
     hash_arquivo: str = "",
     nome_arquivo: str = "",
 ) -> StreamingResponse:
-    tmp_path = _arquivos_tmp.get(file_id)
+    tmp_path = _buscar_upload(file_id)
     if not tmp_path or not os.path.exists(tmp_path):
         raise HTTPException(status_code=404, detail="Arquivo não encontrado. Faça upload novamente.")
-
-    _carregar_modelo(modelo_nome)
-    if diarizar:
-        _carregar_pipeline()
 
     cfg = ConfigTranscricao(
         modelo_nome=modelo_nome,
@@ -83,6 +97,22 @@ async def processar(
     )
 
     async def _gerar():
+        # Carrega modelos DENTRO do stream, emitindo status antes de cada carga.
+        # Antes rodavam na rota (fetch ficava mudo por 30-60s no 1º uso).
+        loop = asyncio.get_running_loop()
+
+        # A carga do modelo/pipeline roda em thread; enquanto isso emitimos
+        # heartbeats num loop com await. Sem esses yields periódicos, o chunk
+        # de status fica preso no buffer e só aparece quando a carga termina.
+        yield _sse_status(f"Carregando modelo Whisper ({modelo_nome})...")
+        async for hb in _carregar_com_heartbeat(loop, _carregar_modelo, modelo_nome):
+            yield hb
+
+        if diarizar:
+            yield _sse_status("Carregando identificação de falantes...")
+            async for hb in _carregar_com_heartbeat(loop, _carregar_pipeline):
+                yield hb
+
         async for chunk in stream_transcricao(
             arquivo=tmp_path,
             modelo=cache.modelo_whisper,
@@ -94,10 +124,30 @@ async def processar(
         ):
             yield chunk
 
-        if hash_arquivo and nome_arquivo and verificar_supabase_configurado():
+        # Transcrição terminou: remove o upload e a pasta _dividido do disco.
+        # Se o cliente desconectar antes (GeneratorExit), não chega aqui e os
+        # arquivos ficam para o reprocessamento (último-clique-vence).
+        try:
+            os.remove(tmp_path)
+            pasta = _UPLOAD_DIR / f"{Path(tmp_path).stem}_dividido"
+            shutil.rmtree(pasta, ignore_errors=True)
+        except OSError:
             pass
 
-    return StreamingResponse(_gerar(), media_type="text/event-stream")
+    # Headers anti-buffering do SSE. A causa do "status só aparece em lote":
+    # o proxy dev do Next.js comprimia (gzip) o event-stream quando o Chrome
+    # mandava Accept-Encoding, e o gzip acumula blocos antes de enviar.
+    # no-transform proíbe o proxy de comprimir; nosniff e X-Accel-Buffering
+    # são proteções extras contra buffering de browser/proxy reverso.
+    return StreamingResponse(
+        _gerar(),
+        media_type="text/event-stream",
+        headers={
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/salvar")
@@ -196,6 +246,20 @@ def _detectar_duracao(tmp_path: str, tipo: str) -> Optional[float]:
             return float(librosa.get_duration(path=tmp_path))
     except Exception:
         return None
+
+
+def _sse_status(mensagem: str) -> str:
+    return f"data: {json.dumps({'type': 'status', 'message': mensagem})}\n\n"
+
+
+async def _carregar_com_heartbeat(loop, func, *args):
+    # Roda a carga (bloqueante, GIL-pesada) em thread e emite heartbeats
+    # enquanto ela não termina, forçando o flush do stream para o cliente.
+    future = loop.run_in_executor(None, func, *args)
+    while not future.done():
+        yield 'data: {"type":"heartbeat"}\n\n'
+        await asyncio.sleep(0.3)
+    await future
 
 
 def _carregar_modelo(modelo_nome: str) -> None:

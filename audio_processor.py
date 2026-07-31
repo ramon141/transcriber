@@ -131,6 +131,7 @@ def transcrever_completa(
     progress_callback = callbacks.get('progress')
     status_callback = callbacks.get('status')
     preview_callback = callbacks.get('transcricao_preview')
+    deve_cancelar = callbacks.get('deve_cancelar')
 
     # Garante que segmento_inicio é válido
     segmento_inicio = max(1, segmento_inicio)
@@ -178,6 +179,10 @@ def transcrever_completa(
 
     # Processa cada segmento
     for idx, (segmento, duracao) in enumerate(segmentos_para_processar):
+        # Cliente desconectou: aborta para liberar o worker único.
+        if deve_cancelar and deve_cancelar():
+            break
+
         i = segmento_inicio + idx  # número real do segmento (1-based)
         if status_callback:
             status_callback(f"Processando segmento {i}/{len(segmentos)} (transcrevendo {idx+1}/{total_para_processar})...")
@@ -368,6 +373,10 @@ def dividir_audio(
     callbacks = callbacks or {}
     status_callback = callbacks.get('status')
     progress_callback = callbacks.get('progress')
+    deve_cancelar = callbacks.get('deve_cancelar')
+
+    if deve_cancelar and deve_cancelar():
+        return {"sucesso": False, "erro": "cancelado", "cancelado": True}
 
     if status_callback:
         status_callback(f"Carregando arquivo: {Path(arquivo_entrada).name}")
@@ -488,8 +497,13 @@ def processar_audio(
         Dict com resultados do processamento
     """
     arquivo_audio_temp = None
+    deve_cancelar = callbacks.get('deve_cancelar') if callbacks else None
 
     try:
+        # Job abandonado (cliente desconectou): aborta antes de qualquer trabalho pesado.
+        if deve_cancelar and deve_cancelar():
+            return {"sucesso": False, "erro": "cancelado", "cancelado": True}
+
         # Detecta tipo de arquivo
         tipo_arquivo = detectar_tipo_arquivo(arquivo_temporario)
 

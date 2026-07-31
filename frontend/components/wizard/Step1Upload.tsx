@@ -8,7 +8,6 @@ import { useWizard } from "@/lib/store";
 import { uploadArquivo } from "@/lib/api";
 
 const TIPOS = ".mp3,.wav,.m4a,.aac,.flac,.ogg,.wma,.mp4,.avi,.mov,.mkv,.flv,.wmv,.webm,.m4v,.mpg,.mpeg";
-const MAX_MB = 500;
 
 export function Step1Upload() {
   const { setFileInfo, nextStep } = useWizard();
@@ -19,11 +18,6 @@ export function Step1Upload() {
   const processar = useCallback(
     async (file: File) => {
       setErro(null);
-      const mb = file.size / 1024 / 1024;
-      if (mb > MAX_MB) {
-        setErro(`Arquivo muito grande (${mb.toFixed(1)} MB). Limite: ${MAX_MB} MB.`);
-        return;
-      }
       setLoading(true);
       try {
         const info = await uploadArquivo(file);
@@ -84,7 +78,7 @@ export function Step1Upload() {
           <p className="font-semibold text-gray-700">
             {loading ? "Enviando arquivo..." : "Arraste aqui ou clique para selecionar"}
           </p>
-          <p className="text-sm text-gray-400 mt-1">Tamanho máximo: {MAX_MB} MB</p>
+          <p className="text-sm text-gray-400 mt-1">MP3, WAV, M4A, MP4 e mais</p>
         </div>
       </label>
 

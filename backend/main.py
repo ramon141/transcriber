@@ -24,6 +24,11 @@ app.include_router(notion.router, prefix="/api/notion", tags=["notion"])
 app.include_router(config.router, prefix="/api/config", tags=["config"])
 
 
+@app.on_event("startup")
+async def _limpar_uploads_sessao_anterior() -> None:
+    transcricoes.limpar_uploads()
+
+
 @app.get("/api/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}

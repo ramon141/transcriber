@@ -44,16 +44,22 @@ def verificar_dependencias():
         return False
 
 def criar_pasta_saida(nome_arquivo_original):
-    """Cria uma pasta para os arquivos divididos."""
+    """Cria uma pasta para os arquivos divididos, ao lado do arquivo de entrada.
+
+    Fica no diretório do arquivo (ex: $TMPDIR), não no diretório de trabalho —
+    senão o uvicorn --reload detecta os arquivos gerados e reinicia o backend,
+    matando a transcrição em andamento.
+    """
     nome_base = Path(nome_arquivo_original).stem
-    pasta_saida = f"{nome_base}_dividido"
-    
+    dir_base = os.path.dirname(os.path.abspath(nome_arquivo_original))
+    pasta_saida = os.path.join(dir_base, f"{nome_base}_dividido")
+
     if not os.path.exists(pasta_saida):
         os.makedirs(pasta_saida)
         print(f"✓ Pasta criada: {pasta_saida}")
     else:
         print(f"✓ Pasta já existe: {pasta_saida}")
-    
+
     return pasta_saida
 
 def carregar_modelo_whisper(modelo="base"):
